@@ -1,0 +1,59 @@
+{
+  "campaign_name": "Jordan Shattered Backboard Candid",
+  "brand": "Jordan",
+  "market": "US",
+  "audience": "Style-conscious sneaker fans who want high-fashion streetwear moments",
+  "message": "Shatter Backboards",
+  "cta": "Get up there",
+  "legal_disclaimer": "UNOFFICIAL TEST ONLY. This campaign is a software test sample and is not a real advertisement. It is not sponsored by, affiliated with, endorsed by, or connected to Jordan Brand, Nike, Inc., or any related trademark owner. Product imagery and branding are used solely to demonstrate creative pipeline functionality.",
+  "creative_direction": "Candid streetwear lifestyle with a person wearing Jordan 1 Retro High OG Shattered Backboard (2025). Warm brick, concrete plaza, or gym-adjacent street light. Orange / black / white AJ1 colorway exact from product refs. No Frozen Moments AJ4, no grey concrete hover-studio look, no freeze/frozen campaign language.",
+  "visual_style_tags": ["candid", "streetwear", "lifestyle", "AJ1", "shattered backboard"],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Candid Shattered Backboard",
+      "category": "lifestyle sneakers",
+      "product_mode": "generate-concept",
+      "product_role": "lifestyle_angle",
+      "message": "Shatter Backboards",
+      "cta": "Get up there",
+      "creative_direction": "Person in a candid streetwear crouch or seated glance-away on warm brick or plaza concrete, wearing Jordan 1 Shattered Backboard (2025). Amber daylight, shoes readable in frame. Not a grey concrete Frozen Moments product-hover set.",
+      "asset_hint": "Person in a candid streetwear crouch or seated glance-away on concrete, wearing Jordan 1 Shattered Backboard (2025) on their feet. Footwear must match the product refs exactly: orange starfish leather, black overlays, white panel, black swoosh, Wings logo, white midsole, orange outsole. Zoomed creative is a camera pull-back of the SAME pose. Forbidden: wrong colorway, AJ4, floating product-only Frozen Moments shot, freeze/frozen copy, campaign text.",
+      "input_asset_path": "sample-assets/jordan-frozen-moments/lifestyle-refs/nike-tiktok-candid-energy.png",
+      "input_asset_paths": [
+        "sample-assets/jordan-shattered-backboard/product-refs/three-quarter.png",
+        "sample-assets/jordan-shattered-backboard/product-refs/side-profile.png",
+        "sample-assets/jordan-shattered-backboard/product-refs/side-medial.png",
+        "sample-assets/jordan-shattered-backboard/product-refs/front.png",
+        "sample-assets/jordan-shattered-backboard/product-refs/heel-three-quarter.png"
+      ],
+      "landing_url": null,
+      "notes": "Lifestyle person sample for Shattered Backboard AJ1. Unofficial test only."
+    }
+  ],
+  "brand_notes": {
+    "tone": "premium fashion streetwear, candid",
+    "colors": ["#FF6A00", "#111111", "#FFFFFF", "#E8E4DC"],
+    "font_names": ["Bebas Neue"],
+    "logo_required": true,
+    "logo_path": "sample-assets/jordan-frozen-moments/logo.png",
+    "logo_placement": "top-left",
+    "logo_color": "#FFFFFF",
+    "text_color": "#FFFFFF",
+    "forbidden_words": ["official", "sponsored", "endorsed"]
+  },
+  "localize_to": ["en-US", "es-ES"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "framing": "both",
+  "text_render_mode": "pillow",
+  "slot_render": {
+    "logo": "pillow",
+    "headline": "pillow",
+    "supporting": "skip",
+    "cta": "pillow",
+    "legal": "pillow"
+  },
+  "style_reference_paths": [],
+  "likeness_reference_paths": [],
+  "background_reference_paths": []
+}

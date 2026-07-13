@@ -1,0 +1,72 @@
+{
+  "campaign_name": "Jordan Frozen Moments",
+  "brand": "Jordan",
+  "market": "US",
+  "audience": "Sneaker enthusiasts and style-conscious athletes who want premium lifestyle footwear",
+  "message": "Freeze the moment. Move forever.",
+  "cta": "Shop the drop",
+  "creative_direction": "Air Jordan 4 Retro Frozen Moments. Keep the shoe in the exact pose from the official product photo. Only change the background: float it over textured concrete with cool grey studio light and a soft ground shadow. Then zoom that locked hero out hard for crop headroom. Colorway and logo fidelity mandatory: light grey suede, sail midsole, metallic chrome wings/eyelets, netting, Jumpman tongue and heel marks exact. No baked-in campaign typography.",
+  "visual_style_tags": [
+    "pose-locked product",
+    "background swap float",
+    "textured concrete studio",
+    "cold metallic tones",
+    "zoomed-out master",
+    "single shoe hero"
+  ],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Frozen Moments Hero",
+      "category": "sneakers",
+      "product_mode": "use-provided",
+      "product_role": "product_hero",
+      "asset_hint": "Image 1 is the official product photo: LOCK this exact shoe pose, angle, and silhouette. Do not re-pose the shoe. Only replace the background so it floats over textured concrete with cool grey light and a soft shadow. Image 2 is the approved floating-concrete style reference for environment mood only. Images 3+ are more official product photos for materials and logos (Jumpman, Flight tag, chrome wings, suede, sail midsole). Keep logos sharp and exact. No campaign text.",
+      "input_asset_path": "sample-assets/jordan-frozen-moments/product-refs/side-white-bg.png",
+      "input_asset_paths": [
+        "sample-assets/jordan-frozen-moments/product-refs/side-black-bg.png",
+        "sample-assets/jordan-frozen-moments/product-refs/pair-three-quarter.png",
+        "sample-assets/jordan-frozen-moments/product-refs/heel-closeup.png",
+        "sample-assets/jordan-frozen-moments/product-refs/heel-side-closeup.png",
+        "sample-assets/jordan-frozen-moments/product-refs/toe-closeup.png",
+        "sample-assets/jordan-frozen-moments/product-refs/top-down.png"
+      ],
+      "landing_url": null,
+      "notes": "Pose from product photo; composition-ref is background style only."
+    },
+    {
+      "name": "Worn in the City",
+      "category": "lifestyle sneakers",
+      "product_mode": "generate-concept",
+      "product_role": "lifestyle_angle",
+      "asset_hint": "Official Frozen Moments product refs. Lifestyle wear shot with exact shoe materials/logos. No text.",
+      "input_asset_path": null,
+      "input_asset_paths": [
+        "sample-assets/jordan-frozen-moments/product-refs/side-white-bg.png",
+        "sample-assets/jordan-frozen-moments/product-refs/pair-three-quarter.png",
+        "sample-assets/jordan-frozen-moments/product-refs/heel-closeup.png"
+      ],
+      "landing_url": null,
+      "notes": "Second product for assignment coverage."
+    }
+  ],
+  "brand_notes": {
+    "tone": "premium, athletic, cool",
+    "colors": ["#C8C8C8", "#E8E4DC", "#8A8A8A", "#111111"],
+    "font_names": [],
+    "font_alternates": [],
+    "logo_required": true,
+    "logo_path": "sample-assets/jordan-frozen-moments/logo.png",
+    "logo_placement": "top-left",
+    "forbidden_words": []
+  },
+  "localize_to": ["en-US"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "text_render_mode": "pillow",
+  "style_reference_paths": [
+    "sample-assets/jordan-frozen-moments/poster-ref.png",
+    "sample-assets/jordan-frozen-moments/zoom-target-ref.png"
+  ],
+  "likeness_reference_paths": [],
+  "background_reference_paths": []
+}

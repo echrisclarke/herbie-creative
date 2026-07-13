@@ -1,0 +1,49 @@
+{
+  "campaign_name": "Jordan Clara Studio Candid",
+  "brand": "Jordan",
+  "market": "US",
+  "audience": "Style-conscious sneaker fans who want quiet, high-fashion candid moments",
+  "message": "Freeze the moment. Move forever.",
+  "cta": "Own the moment",
+  "creative_direction": "Frozen Moments AJ4 studio candid with Clara. Match the studio style ref exactly: monochrome light-gray concrete corner, soft diffused light, low camera angle with the shoes large in the foreground. LOCKED pose from the style ref: seated on the floor, knees tucked up, leaning slightly back, one arm on a knee, glance away from camera (not looking at lens). Keep Clara's identity from the likeness photo (face, hair, clear glasses, build, leg tattoos). Outfit like the style ref: light gray zip windbreaker, baggy light sweats, white socks. Footwear must be the Frozen Moments AJ4 from the three product shoe refs (accurate silhouette, mesh, eyelets, chunky sole, Jumpman). No campaign text in the image. No logos or patches on clothing. No outdoor coffee-truck or street background.",
+  "visual_style_tags": ["candid", "studio", "monochrome", "streetwear", "jordan", "AJ4"],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Studio Glance Away",
+      "category": "lifestyle sneakers",
+      "product_mode": "generate-concept",
+      "product_role": "lifestyle_angle",
+      "asset_hint": "LOCKED seated floor glance-away from the studio style ref is the hero. Same person as the Clara likeness photo. Same baggy neutrals and white socks. AJ4s from the three product refs, hero in foreground. Zoomed creative must be a camera pull-back of that SAME seated pose on the gray set. Forbidden: standing, outdoor coffee truck, new pose, apparel logos, campaign text.",
+      "input_asset_path": "sample-assets/jordan-frozen-moments/product-refs/pair-three-quarter.png",
+      "input_asset_paths": [
+        "sample-assets/jordan-frozen-moments/product-refs/side-white-bg.png",
+        "sample-assets/jordan-frozen-moments/product-refs/side-black-bg.png"
+      ],
+      "landing_url": null,
+      "notes": "Likeness = clara-likeness.png. Style target = clara-studio-target.png. Three AJ4 angles. No logo overlay."
+    }
+  ],
+  "brand_notes": {
+    "tone": "quiet premium studio streetwear",
+    "colors": ["#E8E4DC", "#C8C8C8", "#FFFFFF", "#111111"],
+    "font_names": ["Bebas Neue"],
+    "logo_required": false,
+    "logo_path": null,
+    "logo_placement": "top-left",
+    "logo_color": "#FFFFFF",
+    "text_color": "#FFFFFF",
+    "forbidden_words": []
+  },
+  "localize_to": ["en-US"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "framing": "both",
+  "text_render_mode": "pillow",
+  "style_reference_paths": [
+    "sample-assets/jordan-frozen-moments/style-refs/clara-studio-target.png"
+  ],
+  "likeness_reference_paths": [
+    "sample-assets/jordan-frozen-moments/lifestyle-refs/clara-likeness.png"
+  ],
+  "background_reference_paths": []
+}

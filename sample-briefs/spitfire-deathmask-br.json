@@ -1,0 +1,72 @@
+{
+  "campaign_name": "Spitfire Deathmask II Em Ação Brasil",
+  "brand": "Spitfire Wheels",
+  "market": "BR",
+  "audience": "Skatistas que querem rodas Formula Four pra sessão de verdade",
+  "message": "Deathmask II. Feita pra rodar.",
+  "cta": "Roda Formula Four",
+  "creative_direction": "Estilo Spitfire: stills de street part com fisheye, angulo baixo, trucks e rodas reais. Rodas Deathmask II glow. Fotografia de skate photoreal. Sem texto na imagem.",
+  "visual_style_tags": [
+    "spitfire street part",
+    "fisheye",
+    "Brazilian plaza",
+    "glow wheels",
+    "photoreal"
+  ],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Roda nos Trucks Close-up",
+      "category": "skateboard wheels",
+      "product_mode": "generate-concept",
+      "product_role": "feature",
+      "asset_hint": "Match the low-angle truck/wheel photos. Deathmask II glow wheel from the product refs on a real axle with nut. Fill the frame with the near wheel. Photoreal. No text.",
+      "input_asset_path": "sample-assets/spitfire-deathmask/correct-mount-refs/wheel-axle-nut-close.png",
+      "input_asset_paths": [
+        "sample-assets/spitfire-deathmask/correct-mount-refs/fisheye-grind-ledge.png",
+        "sample-assets/spitfire-deathmask/product-refs/glow-wheel-hero.png",
+        "sample-assets/spitfire-deathmask/brand-refs/deathmask-ii-packshot.png"
+      ],
+      "landing_url": null,
+      "notes": "Correct mount seed + glow Deathmask product."
+    },
+    {
+      "name": "Fisheye Street Part",
+      "category": "skate lifestyle",
+      "product_mode": "generate-concept",
+      "product_role": "lifestyle_angle",
+      "asset_hint": "Spitfire video-part fisheye energy like the gallery refs, Brazilian street plaza. Low angle, skater mid-trick, board underside readable. Deathmask II glow wheels from the product refs. Photoreal. No text.",
+      "input_asset_path": "sample-assets/spitfire-deathmask/correct-mount-refs/fisheye-underside-pink.png",
+      "input_asset_paths": [
+        "sample-assets/spitfire-deathmask/correct-mount-refs/fisheye-kickflip-trees.png",
+        "sample-assets/spitfire-deathmask/correct-mount-refs/lifestyle-foot-on-tail.png",
+        "sample-assets/spitfire-deathmask/brand-style-refs/spitfire-site-gallery.png",
+        "sample-assets/spitfire-deathmask/product-refs/glow-wheel-hero.png"
+      ],
+      "landing_url": null,
+      "notes": "Fisheye street-part still for Brazil."
+    }
+  ],
+  "brand_notes": {
+    "tone": "autentico, grit",
+    "colors": ["#39FF14", "#111111", "#FFFFFF"],
+    "font_names": ["Bebas Neue"],
+    "font_alternates": [],
+    "logo_required": true,
+    "logo_path": "sample-assets/spitfire-deathmask/brand-refs/logo.png",
+    "logo_placement": "top-left",
+    "forbidden_words": []
+  },
+  "localize_to": ["pt-BR"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "framing": "close-up",
+  "text_render_mode": "pillow",
+  "style_reference_paths": [
+    "sample-assets/spitfire-deathmask/brand-style-refs/skate-like-a-girl-banners.png",
+    "sample-assets/spitfire-deathmask/brand-style-refs/spitfire-site-gallery.png"
+  ],
+  "likeness_reference_paths": [],
+  "background_reference_paths": [
+    "sample-assets/spitfire-deathmask/correct-mount-refs/fisheye-ledge-industrial.png"
+  ]
+}

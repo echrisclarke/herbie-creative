@@ -1,0 +1,13 @@
+Smoke Test Campaign for Acme in the US.
+
+Audience: general consumers interested in everyday products.
+Message: Simple. Clear. Ready.
+CTA: Learn more.
+
+Products:
+1) Acme Bottle (drinkware) — use the provided product photo as the hero.
+2) Acme Lifestyle Moment — generate a simple lifestyle concept visual.
+
+Creative direction: clean product-focused social ad with soft studio lighting.
+Style tags: clean, studio, minimal.
+Outputs: 1:1, 9:16, 16:9.

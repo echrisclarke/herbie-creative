@@ -1,0 +1,48 @@
+{
+  "campaign_name": "Smoke Test Campaign",
+  "brand": "Acme",
+  "market": "US",
+  "audience": "General consumers interested in everyday products",
+  "message": "Simple. Clear. Ready.",
+  "cta": "Learn more",
+  "creative_direction": "Clean product-focused social ad with soft studio lighting",
+  "visual_style_tags": ["clean", "studio", "minimal"],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Acme Bottle",
+      "category": "drinkware",
+      "product_mode": "use-provided",
+      "product_role": "product_hero",
+      "asset_hint": "Use the uploaded bottle product photo as the creative base.",
+      "input_asset_path": "sample-assets/smoke-test/product-1.png",
+      "landing_url": null,
+      "notes": "Functional smoke-test product hero."
+    },
+    {
+      "name": "Acme Lifestyle Moment",
+      "category": "lifestyle",
+      "product_mode": "generate-concept",
+      "product_role": "lifestyle_angle",
+      "asset_hint": "Generate a simple lifestyle concept visual that supports the campaign message.",
+      "input_asset_path": null,
+      "landing_url": null,
+      "notes": "Functional smoke-test GenAI concept product."
+    }
+  ],
+  "brand_notes": {
+    "tone": "friendly, clear",
+    "colors": ["#1A73E8", "#FFFFFF", "#222222"],
+    "font_names": [],
+    "font_alternates": [],
+    "logo_required": true,
+    "logo_path": "sample-assets/smoke-test/logo.png",
+    "logo_placement": "top-left",
+    "forbidden_words": []
+  },
+  "localize_to": ["en-US", "zh-CN"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "style_reference_paths": [],
+  "likeness_reference_paths": [],
+  "background_reference_paths": []
+}

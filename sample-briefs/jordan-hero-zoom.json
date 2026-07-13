@@ -1,0 +1,80 @@
+{
+  "campaign_name": "Jordan Hero Zoom",
+  "brand": "Jordan",
+  "market": "US",
+  "audience": "Sneaker enthusiasts",
+  "message": "Freeze the moment. Move forever.",
+  "cta": "Own the moment",
+  "legal_disclaimer": "UNOFFICIAL TEST ONLY. This campaign is a software test sample and is not a real advertisement. It is not sponsored by, affiliated with, endorsed by, or connected to Jordan Brand, Nike, Inc., or any related trademark owner. Product imagery and branding are used solely to demonstrate creative pipeline functionality.",
+  "creative_direction": "Two distinct Jordan product heroes in separate scenes. Each product uses its own creative_direction, message, and CTA. Do not blend the two shoes or share one product's scene language with the other.",
+  "visual_style_tags": ["studio", "floating product", "zoom out", "product hero"],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Frozen Moments Hero",
+      "category": "sneakers",
+      "product_mode": "use-provided",
+      "product_role": "product_hero",
+      "message": "Freeze the moment. Move forever.",
+      "cta": "Own the moment",
+      "creative_direction": "Grey concrete room, soft cool light, Frozen Moments AJ4 hovering with soft shadow. Quiet studio atmosphere. Close-up fills the frame; zoomed framing pulls back with more floor and soft light.",
+      "asset_hint": "Grey concrete room, soft light, Frozen Moments AJ4 hovering with soft shadow. Keep the exact AJ4 silhouette, mesh, and materials from the product refs. Close-up fills the frame. Zoomed version pulls back with more floor and soft light.",
+      "input_asset_path": "sample-assets/jordan-frozen-moments/product-refs/side-black-bg.png",
+      "input_asset_paths": [
+        "sample-assets/jordan-frozen-moments/zoom-target-ref.png",
+        "sample-assets/jordan-frozen-moments/product-refs/side-white-bg.png"
+      ],
+      "style_reference_paths": [
+        "sample-assets/jordan-frozen-moments/zoom-target-ref.png",
+        "sample-assets/jordan-frozen-moments/poster-ref.png"
+      ],
+      "landing_url": null,
+      "notes": "Product 1 of 2 (AJ4 Frozen Moments). Unofficial test sample only."
+    },
+    {
+      "name": "Shattered Backboard AJ1",
+      "category": "sneakers",
+      "product_mode": "use-provided",
+      "product_role": "product_hero",
+      "message": "Shatter Backboards",
+      "cta": "Get up there",
+      "creative_direction": "Warm brick gym wall and late amber light, orange-black-white color story matching Jordan 1 Retro High OG Shattered Backboard (2025). Think backboard / hardwood energy, not a grey concrete Frozen Moments studio. Soft shadow under a floating AJ1. Close-up fills the frame; zoomed framing pulls back to show more wall and floor.",
+      "asset_hint": "Jordan 1 Retro High OG Shattered Backboard (2025): orange (starfish), black, and sail/white color-blocked leather, black swoosh on white panel, orange heel and toe, white midsole, orange outsole, Wings logo on ankle. Hover with soft shadow on warm brick / gym backboard atmosphere. Forbidden: grey concrete Frozen Moments set, AJ4 silhouette, freeze/frozen copy cues.",
+      "input_asset_path": "sample-assets/jordan-shattered-backboard/product-refs/three-quarter.png",
+      "input_asset_paths": [
+        "sample-assets/jordan-shattered-backboard/product-refs/side-profile.png",
+        "sample-assets/jordan-shattered-backboard/product-refs/side-medial.png",
+        "sample-assets/jordan-shattered-backboard/product-refs/front.png",
+        "sample-assets/jordan-shattered-backboard/product-refs/heel.png"
+      ],
+      "landing_url": null,
+      "notes": "Product 2 of 2. Distinct AJ1 Shattered Backboard. Own copy and scene. Unofficial test sample only."
+    }
+  ],
+  "brand_notes": {
+    "tone": "premium athletic",
+    "colors": ["#E8E4DC", "#C8C8C8", "#FFFFFF", "#FF6A00", "#111111"],
+    "font_names": ["Bebas Neue"],
+    "font_alternates": [],
+    "logo_required": true,
+    "logo_path": "sample-assets/jordan-frozen-moments/logo.png",
+    "logo_placement": "top-left",
+    "logo_color": "#FFFFFF",
+    "text_color": "#FFFFFF",
+    "forbidden_words": ["official", "sponsored", "endorsed"]
+  },
+  "localize_to": ["en-US", "es-ES", "zh-CN"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "framing": "zoomed",
+  "text_render_mode": "pillow",
+  "slot_render": {
+    "logo": "pillow",
+    "headline": "pillow",
+    "supporting": "skip",
+    "cta": "pillow",
+    "legal": "pillow"
+  },
+  "style_reference_paths": [],
+  "likeness_reference_paths": [],
+  "background_reference_paths": []
+}

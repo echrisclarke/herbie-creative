@@ -1,0 +1,72 @@
+{
+  "campaign_name": "Card-o-Bot Collectible Drop",
+  "brand": "Card-o-Bot",
+  "market": "US",
+  "audience": "Kids, families, and creative collectors who want custom AI trading cards they can make in a playful web app and enjoy as a real printed deck",
+  "message": "Your deck. Made in the app.",
+  "cta": "Start at cardobot.com",
+  "creative_direction": "Two ad stories for Card-o-Bot. (1) PHYSICAL DECK: real printed trading-card deck in a cool modern apartment where someone would actually play. Thick cards with slightly worn edges, fanned on a wood or stone coffee table. Soft daylight, sofa edge or plant in the background. One custom FRONT face-up; official BACK colorways peek behind. Not flat PNGs on a void. Not casino/poker night. (2) APP IN THE WILD: industry-standard device advertising. Crop tight on hands + device (phone, tablet with Apple Pencil, or laptop). Never show a full person or face. The Card-o-Bot start UI must appear clearly on the screen (pixel CARD-O-BOT, screw-corner frame, pink robots, pastel landscape). Finger tapping a phone, or stylus/Apple Pencil on an iPad, in a believable real environment (desk, couch, cafe table, soft daylight). Brand look stays playful and product-true. Official BACKS are fixed brand templates in different colorways (never invent new backs). FRONTS are unique user-made custom cards.",
+  "visual_style_tags": [
+    "product advertising",
+    "printed collectible deck",
+    "apartment coffee table",
+    "device-in-hand lifestyle crop",
+    "pastel pixel brand UI",
+    "tight crop no full body",
+    "real environment soft daylight"
+  ],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Card-o-Bot Deck Hero",
+      "category": "printed trading card deck",
+      "product_mode": "use-provided",
+      "product_role": "product_hero",
+      "asset_hint": "CRITICAL silhouette: standard rectangular playing cards with evenly rounded corners only. No HP-corner tab, notch, step, bite, or cutout. Keep front art/stats; HP stays inside the top-right of the rectangle. Image 1 is the USER-MADE FRONT (hero); images 2+ are official BACK colorways. Cool apartment coffee table. FRONT face-up and centered; 2-3 backs in a tight neat pile (slight offset OK). No long diagonal fan. Close-up fills frame on centered deck; zoom keeps optical center of the stack mid-frame with equal space above/below. Soft daylight. No full person.",
+      "input_asset_path": "sample-assets/cardobot/card-front.png",
+      "input_asset_paths": [
+        "sample-assets/cardobot/backs/card-back-01.png",
+        "sample-assets/cardobot/backs/card-back-02.png",
+        "sample-assets/cardobot/backs/card-back-03.png",
+        "sample-assets/cardobot/backs/card-back-04.png",
+        "sample-assets/cardobot/backs/card-back-05.png",
+        "sample-assets/cardobot/backs/card-back-06.png"
+      ],
+      "landing_url": "https://cardobot.com",
+      "notes": "Physical printed deck product shot from custom front + official back colorways."
+    },
+    {
+      "name": "Make Cards in the App",
+      "category": "web app on device",
+      "product_mode": "generate-concept",
+      "product_role": "service_angle",
+      "asset_hint": "Images 1-3 are exact Card-o-Bot UI references on phone, laptop, and tablet (cardobot.com start screen: pastel landscape, screw-frame UI, pixel CARD-O-BOT, pink robots, Click to start). Place that SAME interface onto a real device screen in a cool modern apartment. Industry-standard app ad crop: hands + device only, no face, no full body. Prefer phone on a coffee table or held in hand, OR tablet with Apple Pencil on the sofa/table, OR laptop on a desk. Soft daylight. Screen content must stay faithful to the provided UI refs. Close-up fills the frame on the device; zoomed version is wider and centered with more of the room. Do not invent a different app.",
+      "input_asset_path": null,
+      "input_asset_paths": [
+        "sample-assets/cardobot/devices/phone-ui.png",
+        "sample-assets/cardobot/devices/laptop-ui.png",
+        "sample-assets/cardobot/devices/tablet-ui.png"
+      ],
+      "landing_url": "https://cardobot.com",
+      "notes": "In-environment device ad seeded from phone/laptop/tablet UI mockups."
+    }
+  ],
+  "brand_notes": {
+    "tone": "playful, inventive, kid-friendly, collectible",
+    "colors": ["#00E5FF", "#FF6BCB", "#F5E6C8", "#111111"],
+    "font_names": [],
+    "font_alternates": [],
+    "logo_required": true,
+    "logo_path": "sample-assets/cardobot/logo.png",
+    "logo_placement": "top-left",
+    "forbidden_words": []
+  },
+  "localize_to": ["en-US", "zh-CN"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "text_render_mode": "pillow",
+  "style_reference_paths": [],
+  "likeness_reference_paths": [],
+  "background_reference_paths": [
+    "sample-assets/cardobot/background-ref.jpg"
+  ]
+}

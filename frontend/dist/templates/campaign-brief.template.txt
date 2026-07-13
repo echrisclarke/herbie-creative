@@ -1,0 +1,28 @@
+Campaign name: Your Campaign Name
+Brand: Brand Name
+Market: US
+Audience: Who this is for
+
+Message: Primary headline / campaign line
+CTA: Call to action
+Supporting copy: (optional)
+Legal disclaimer: (optional)
+
+Creative direction:
+Describe the look, pose, lighting, set, and what must stay locked.
+Say what is forbidden.
+
+Style tags: tag-one, tag-two
+Motion notes: (optional; used later on Results when you choose stills to animate)
+
+Products:
+1) Product or Scene Name
+   Category: product category
+   Mode: generate-concept (or use-provided if you will upload a hero product photo)
+   Role: lifestyle_angle
+   Asset hint: What the hero image should show. Lock pose/outfit/product details here.
+   Notes: Upload product/logo/style/likeness files in the UI after this brief.
+
+Outputs: 1:1, 9:16, 16:9
+Framing: both (or close-up, or zoomed)
+Languages: (optional; leave blank to decide later)

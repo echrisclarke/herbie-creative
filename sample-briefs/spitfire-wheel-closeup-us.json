@@ -1,0 +1,46 @@
+{
+  "campaign_name": "Spitfire Deathmask II Wheel Close-up US",
+  "brand": "Spitfire Wheels",
+  "market": "US",
+  "audience": "Skateboarders who want Formula Four wheels for real sessions",
+  "message": "Deathmask II. Built to roll.",
+  "cta": "Ride Formula Four",
+  "creative_direction": "Spitfire Deathmask II glow wheel in real street skating. Dark grit. Photoreal. No campaign text in the image.",
+  "visual_style_tags": ["street skate", "night session", "glow wheels", "photoreal"],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Wheel on Trucks Close-up",
+      "category": "skateboard wheels",
+      "product_mode": "generate-concept",
+      "product_role": "feature",
+      "asset_hint": "Keep this exact skateboard truck and axle geometry. Replace the wheels with the glow Spitfire Deathmask II wheel from the other refs. Flip travel so the board rolls the opposite direction. Low angle, fill the frame with the near wheel. Photoreal. No text.",
+      "input_asset_path": "sample-assets/spitfire-deathmask/brand-refs/board-anatomy-truck.png",
+      "input_asset_paths": [
+        "sample-assets/spitfire-deathmask/product-refs/glow-wheel-hero.png",
+        "sample-assets/spitfire-deathmask/brand-refs/board-anatomy-mixed-wheels.png",
+        "sample-assets/spitfire-deathmask/brand-refs/deathmask-ii-packshot.png"
+      ],
+      "landing_url": null,
+      "notes": "Seed from real truck anatomy; swap glow wheel; opposite travel."
+    }
+  ],
+  "brand_notes": {
+    "tone": "aggressive, authentic skate",
+    "colors": ["#39FF14", "#111111", "#FFFFFF"],
+    "font_names": ["Bebas Neue"],
+    "logo_required": true,
+    "logo_path": "sample-assets/spitfire-deathmask/brand-refs/logo.png",
+    "logo_placement": "top-left",
+    "forbidden_words": []
+  },
+  "localize_to": ["en-US"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "framing": "close-up",
+  "text_render_mode": "pillow",
+  "style_reference_paths": [
+    "sample-assets/spitfire-deathmask/brand-style-refs/skate-like-a-girl-product.png"
+  ],
+  "likeness_reference_paths": [],
+  "background_reference_paths": []
+}

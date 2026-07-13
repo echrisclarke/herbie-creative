@@ -1,0 +1,44 @@
+{
+  "campaign_name": "Jordan Frozen Moments Candid",
+  "brand": "Jordan",
+  "market": "US",
+  "audience": "Style-conscious sneaker fans who want high-fashion streetwear moments",
+  "message": "Freeze the moment. Move forever.",
+  "cta": "Own the moment",
+  "creative_direction": "Frozen Moments AJ4 candid streetwear. Keep the glance-away crouch as locked. Zoomed creative must be a camera pull-back of that same pose. No campaign text in the image. Add extra product or style refs on Review if you want more fidelity.",
+  "visual_style_tags": ["candid", "streetwear", "frozen moment"],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Candid Glance Away",
+      "category": "lifestyle sneakers",
+      "product_mode": "generate-concept",
+      "product_role": "lifestyle_angle",
+      "asset_hint": "LOCKED tight crouch glance-away is the hero. Zoomed creative must be a camera pull-back of that SAME crouch on concrete (same person, pose, outfit, shoes). Forbidden: chair, stool, standing, new pose. No text.",
+      "input_asset_path": "sample-assets/jordan-frozen-moments/lifestyle-refs/nike-tiktok-candid-energy.png",
+      "input_asset_paths": [
+        "sample-assets/jordan-frozen-moments/product-refs/pair-three-quarter.png"
+      ],
+      "landing_url": null,
+      "notes": "Slim sample: one lifestyle hero + one shoe ref. Upload more product angles on Review if needed."
+    }
+  ],
+  "brand_notes": {
+    "tone": "premium fashion streetwear, candid",
+    "colors": ["#E8E4DC", "#C8C8C8", "#FFFFFF", "#111111"],
+    "font_names": ["Bebas Neue"],
+    "logo_required": true,
+    "logo_path": "sample-assets/jordan-frozen-moments/logo.png",
+    "logo_placement": "top-left",
+    "logo_color": "#FFFFFF",
+    "text_color": "#FFFFFF",
+    "forbidden_words": []
+  },
+  "localize_to": ["en-US", "es-ES", "zh-CN"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "framing": "both",
+  "text_render_mode": "pillow",
+  "style_reference_paths": [],
+  "likeness_reference_paths": [],
+  "background_reference_paths": []
+}

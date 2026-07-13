@@ -1,0 +1,54 @@
+campaign_name: Your Campaign Name
+brand: Brand Name
+market: US
+audience: Who this is for
+message: Primary headline / campaign line
+cta: Call to action
+supporting_copy: ""
+legal_disclaimer: ""
+creative_direction: >
+  Describe the look, pose, lighting, set, and what must stay locked.
+  Say what is forbidden.
+visual_style_tags:
+  - tag-one
+  - tag-two
+motion_notes: Optional motion direction; edited on Results before generating video
+products:
+  - name: Product or Scene Name
+    category: product category
+    # use-provided | generate-concept
+    product_mode: generate-concept
+    # product_hero | feature | lifestyle_angle | service_angle | drop_announcement
+    product_role: lifestyle_angle
+    asset_hint: >
+      What the hero image should show. Lock pose/outfit/product details here.
+    input_asset_path: null
+    input_asset_paths: []
+    landing_url: null
+    notes: Optional notes. Upload product/logo/style/likeness files in the UI.
+brand_notes:
+  tone: brand tone
+  colors:
+    - "#FFFFFF"
+    - "#111111"
+  font_names: []
+  logo_required: false
+  logo_path: null
+  logo_description: null
+  logo_placement: top-left
+  text_placement: bottom-center
+  logo_color: "#FFFFFF"
+  text_color: "#FFFFFF"
+  forbidden_words: []
+localize_to: []
+outputs:
+  - "1:1"
+  - "9:16"
+  - "16:9"
+# close-up | zoomed | both
+framing: both
+# later | none | pillow | ai | hybrid
+text_render_mode: later
+style_reference_paths: []
+likeness_reference_paths: []
+background_reference_paths: []

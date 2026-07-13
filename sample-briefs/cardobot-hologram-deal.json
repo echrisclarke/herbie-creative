@@ -1,0 +1,56 @@
+{
+  "campaign_name": "Card-o-Bot Hologram Deal",
+  "brand": "Card-o-Bot",
+  "market": "US",
+  "audience": "Gamers who love retro-futurist cyberpunk and want a cute card game that feels like a secret drop",
+  "message": "Press start.",
+  "cta": "cardobot.com",
+  "creative_direction": "Retro-futuristic cyberpunk room that feels like a playable future: neon, screens, soft haze, but still a real interior. Card-o-Bot cards appear as crisp holograms floating in a deal-ready fan or stack in mid-air, still reading as real card faces/backs, not UI chrome. Fun, game-ad energy. Photoreal. No campaign text in the image.",
+  "visual_style_tags": [
+    "hologram cards",
+    "retro futuristic cyberpunk",
+    "neon interior",
+    "game ad",
+    "photoreal"
+  ],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Hologram Deal",
+      "category": "hologram trading cards",
+      "product_mode": "generate-concept",
+      "product_role": "lifestyle_angle",
+      "asset_hint": "Image 1 is the custom FRONT. Other images are official backs / more fronts. In a retro-futuristic cyberpunk room, show these as hologram cards floating mid-air in a neat deal-ready fan or short stack, still looking like real Card-o-Bot cards. Soft volumetric glow. Fun game-ad vibe. Photoreal. No text.",
+      "input_asset_path": "sample-assets/cardobot/card-front.png",
+      "input_asset_paths": [
+        "sample-assets/cardobot/backs/card-back-01.png",
+        "sample-assets/cardobot/backs/card-back-02.png",
+        "sample-assets/cardobot/backs/card-back-03.png",
+        "sample-assets/cardobot/fronts/card-front-01.png",
+        "sample-assets/cardobot/fronts/card-front-02.png",
+        "sample-assets/cardobot/fronts/card-front-03.png"
+      ],
+      "landing_url": "https://cardobot.com",
+      "notes": "Hologram floating cards in cyberpunk room. Still readable as real cards."
+    }
+  ],
+  "brand_notes": {
+    "tone": "playful, mysterious, retro-futurist, fun",
+    "colors": ["#00E5FF", "#FF6BCB", "#111111", "#FFFFFF"],
+    "font_names": ["Press Start 2P"],
+    "font_alternates": ["VT323", "Silkscreen"],
+    "logo_required": true,
+    "logo_path": "sample-assets/cardobot/logo.png",
+    "logo_placement": "top-left",
+    "forbidden_words": []
+  },
+  "localize_to": ["en-US", "zh-CN"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "framing": "both",
+  "text_render_mode": "pillow",
+  "style_reference_paths": [],
+  "likeness_reference_paths": [],
+  "background_reference_paths": [
+    "sample-assets/cardobot/background-ref.jpg"
+  ]
+}

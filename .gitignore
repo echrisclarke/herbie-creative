@@ -1,0 +1,33 @@
+.env
+private/
+.venv/
+backend/.venv/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.ruff_cache/
+node_modules/
+frontend/node_modules/
+# Runtime campaign outputs (regenerate via samples or Intake)
+campaigns/
+!campaigns/.gitkeep
+campaigns/_font_cache/
+*.log
+herbie.log
+herbie.status
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+# Keep built UI so reviewers can run with Python only (no Node required)
+# Do not ignore frontend/dist
+
+backend/_tmp_*
+
+# Private / personal notes (do not publish)
+interview-prep/
+docs/POST_BUILD_HANDOFF.md
+docs/references/
+
+# One-off local repair / experiment scripts (not part of the runnable app)
+backend/scripts/

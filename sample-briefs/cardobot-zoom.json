@@ -1,0 +1,55 @@
+{
+  "campaign_name": "Card-o-Bot Deck Zoom",
+  "brand": "Card-o-Bot",
+  "market": "US",
+  "audience": "Kids, families, and creative collectors",
+  "message": "Your deck. Made in the app.",
+  "cta": "Start at cardobot.com",
+  "creative_direction": "Real printed Card-o-Bot deck on a wood or stone coffee table in a cool modern apartment with soft daylight, sofa edge, plant, or books visible. NOT a grey void studio. NOT a seamless infinite backdrop. Every card is a standard rectangular trading card with evenly rounded corners only. No HP-corner tab, notch, step, bite, or cutout. Keep the exact same custom FRONT card identity (Spyglebot art and stats) on every framing and ratio. Hero front face-up and centered; 2-3 official backs in a tight neat stack. On zoomed stills, optical center of the stack at mid-frame. Not casino night.",
+  "visual_style_tags": [
+    "printed collectible deck",
+    "apartment lifestyle",
+    "coffee table product",
+    "soft daylight",
+    "standard rectangular cards"
+  ],
+  "motion_notes": "",
+  "products": [
+    {
+      "name": "Card-o-Bot Deck Hero",
+      "category": "printed trading card deck",
+      "product_mode": "use-provided",
+      "product_role": "product_hero",
+      "asset_hint": "CRITICAL: exact Spyglebot FRONT identity on every still (same art, name, HP, stats). Do not invent a different bot card. CRITICAL silhouette: standard rectangular playing card, evenly rounded corners only; no HP tab/notch/cutout; HP inside top-right of rectangle. CRITICAL environment: wood/stone coffee table in a real apartment with soft daylight and room context (sofa/plant/books). Never grey void studio. Stack: FRONT face-up centered; 2-3 official backs tight neat pile. Close-up fills frame. Zoom: stack optical center mid-frame with equal space above/below and apartment visible.",
+      "input_asset_path": "sample-assets/cardobot/card-front.png",
+      "input_asset_paths": [
+        "sample-assets/cardobot/backs/card-back-01.png",
+        "sample-assets/cardobot/backs/card-back-02.png",
+        "sample-assets/cardobot/backs/card-back-03.png",
+        "sample-assets/cardobot/backs/card-back-04.png",
+        "sample-assets/cardobot/backs/card-back-05.png"
+      ],
+      "landing_url": "https://cardobot.com",
+      "notes": "Apartment table lifestyle. Standard rectangular cards only. Centered stack on zoom."
+    }
+  ],
+  "brand_notes": {
+    "tone": "playful, collectible",
+    "colors": ["#00E5FF", "#FF6BCB", "#F5E6C8", "#111111"],
+    "font_names": [],
+    "font_alternates": [],
+    "logo_required": false,
+    "logo_path": "sample-assets/cardobot/logo.png",
+    "logo_placement": "top-left",
+    "forbidden_words": []
+  },
+  "localize_to": ["en-US", "zh-CN"],
+  "outputs": ["1:1", "9:16", "16:9"],
+  "framing": "both",
+  "text_render_mode": "pillow",
+  "style_reference_paths": [],
+  "likeness_reference_paths": [],
+  "background_reference_paths": [
+    "sample-assets/cardobot/background-ref.jpg"
+  ]
+}
