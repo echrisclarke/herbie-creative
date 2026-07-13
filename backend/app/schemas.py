@@ -117,6 +117,8 @@ class Brief(BaseModel):
     brand_notes: BrandNotes = Field(default_factory=BrandNotes)
     # Soft cap applied in pipeline (MAX_LOCALES). Optional in Review; set in Finalize.
     localize_to: list[str] = Field(default_factory=list)
+    # Optional Review/Finalize cache of per-language overlay copy (message/cta/supporting).
+    locales_copy: dict[str, LocaleCopy] = Field(default_factory=dict)
     # One, some, or all of 1:1 / 9:16 / 16:9. Order is generation chain order.
     outputs: list[str] = Field(default_factory=lambda: ["1:1", "9:16", "16:9"])
     # Framing for the first selected ratio: close-up, zoomed-out, or both presets.
@@ -260,10 +262,15 @@ class LocalizeCopyRequest(BaseModel):
 
     message: str = ""
     cta: str = ""
-    supporting: str = ""
+    # Clients often send null when sub-caption is empty; accept and coerce.
+    supporting: str | None = ""
     locales: list[str] = Field(default_factory=list)
     locked_locales: list[str] = Field(default_factory=list)
     existing: dict[str, LocaleCopy] | None = None
+
+    @property
+    def supporting_text(self) -> str:
+        return self.supporting or ""
 
 
 class CreativeResult(BaseModel):

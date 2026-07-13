@@ -52,6 +52,16 @@ outputs_root = campaigns_root()
 outputs_root.mkdir(parents=True, exist_ok=True)
 app.mount("/outputs", StaticFiles(directory=str(outputs_root)), name="outputs")
 
+# Seed brand/product files (logo.png, refs) live under sample-assets/, not campaigns/.
+# Finalize preview / LogoPicker need these over HTTP; Apply already resolves via PROJECT_ROOT.
+_sample_assets = PROJECT_ROOT / "sample-assets"
+if _sample_assets.is_dir():
+    app.mount(
+        "/sample-assets",
+        StaticFiles(directory=str(_sample_assets)),
+        name="sample-assets",
+    )
+
 
 @app.get("/health")
 def health() -> dict:
@@ -382,19 +392,31 @@ def finalize_endpoint(campaign_id: str, body: FinalizeChoices | None = None) -> 
 def localize_copy_endpoint(campaign_id: str, body: LocalizeCopyRequest) -> dict:
     """Re-adapt non-source locales after the source language copy changes."""
     from app.fastapi_intake import load_campaign_brief
-    from app.providers.openai_writer import fill_localized_copy
+    from app.providers.openai_writer import fill_localized_copy, normalize_language_id
 
     try:
         brief = load_campaign_brief(campaign_id)
-        locales = [x for x in (body.locales or []) if x]
+        locales = [normalize_language_id(x) for x in (body.locales or []) if x]
+        # De-dupe while preserving order (en-US and English both → English).
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for loc in locales:
+            key = loc.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(loc)
+        locales = deduped
         if not locales:
-            locales = list(brief.localize_to or ["English"])
-        locked = {str(x) for x in (body.locked_locales or [])}
+            locales = [
+                normalize_language_id(x) for x in (brief.localize_to or ["English"]) if x
+            ] or ["English"]
+        locked = {normalize_language_id(str(x)) for x in (body.locked_locales or [])}
         seed_brief = brief.model_copy(
             update={
                 "message": body.message or brief.message,
                 "cta": body.cta or brief.cta,
-                "supporting_copy": body.supporting
+                "supporting_copy": body.supporting_text
                 if body.supporting is not None
                 else brief.supporting_copy,
             }
@@ -402,10 +424,11 @@ def localize_copy_endpoint(campaign_id: str, body: LocalizeCopyRequest) -> dict:
         existing_raw = body.existing or {}
         existing: dict[str, dict] = {}
         for loc, pair in existing_raw.items():
+            id_ = normalize_language_id(loc)
             if hasattr(pair, "model_dump"):
-                existing[loc] = pair.model_dump()
+                existing[id_] = pair.model_dump()
             else:
-                existing[loc] = dict(pair)
+                existing[id_] = dict(pair)
 
         seed: dict[str, dict] = {}
         source = locales[0]
@@ -420,9 +443,10 @@ def localize_copy_endpoint(campaign_id: str, body: LocalizeCopyRequest) -> dict:
                 seed[loc] = {
                     "message": body.message,
                     "cta": body.cta,
-                    "supporting": body.supporting,
+                    "supporting": body.supporting_text,
                 }
             else:
+                # Force a fresh translation; do not keep English stubs.
                 seed[loc] = {"message": "", "cta": "", "supporting": ""}
 
         filled = fill_localized_copy(
@@ -443,7 +467,7 @@ def localize_copy_endpoint(campaign_id: str, body: LocalizeCopyRequest) -> dict:
                 filled[loc] = {
                     "message": body.message,
                     "cta": body.cta,
-                    "supporting": body.supporting,
+                    "supporting": body.supporting_text,
                 }
         return {"ok": True, "locales": filled}
     except FileNotFoundError as exc:

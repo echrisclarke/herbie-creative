@@ -207,10 +207,12 @@ function logoPreviewStyle(
   const shadow = Math.max(0, Math.min(1, opts?.shadow ?? 0))
   const base: CSSProperties = {
     position: 'absolute',
-    width: `${20 * scale}%`,
-    maxWidth: 140 * scale,
-    height: `${9 * scale}%`,
-    maxHeight: `${10 * scale}%`,
+    width: `${22 * scale}%`,
+    maxWidth: 160 * scale,
+    // Keep a near-square box so Jumpman / wordmarks are not clipped to a short strip.
+    aspectRatio: '1 / 1',
+    height: 'auto',
+    maxHeight: `${18 * scale}%`,
     objectFit: 'contain',
     pointerEvents: 'none',
     zIndex: 3,
@@ -279,7 +281,19 @@ export function FinalizeStep({
   const [previewLocale, setPreviewLocale] = useState<string>(() => initialLocales(brief)[0] || 'English')
   const [localeCopy, setLocaleCopy] = useState<
     Record<string, { message: string; cta: string; supporting?: string }>
-  >({})
+  >(() => {
+    const seed: Record<string, { message: string; cta: string; supporting?: string }> = {}
+    for (const [loc, pair] of Object.entries(brief.locales_copy || {})) {
+      const id = normalizeLanguageId(loc)
+      if (!id || !pair) continue
+      seed[id] = {
+        message: pair.message || '',
+        cta: pair.cta || '',
+        supporting: pair.supporting || '',
+      }
+    }
+    return seed
+  })
   const [campaignTextMode, setCampaignTextMode] = useState<CampaignTextMode>(() =>
     initialCampaignTextMode(brief),
   )
@@ -331,9 +345,12 @@ export function FinalizeStep({
   const previewImgRef = useRef<HTMLImageElement | null>(null)
   const [overlayBox, setOverlayBox] = useState({ top: 0, left: 0, width: 0, height: 0 })
   const autoSuggestStarted = useRef(false)
+  const autoLocaleAdaptKey = useRef('')
   const logoPlacementTouched = useRef(false)
   const localeAdaptTimer = useRef<number | null>(null)
   const localeAdaptSeq = useRef(0)
+  const briefRef = useRef(brief)
+  briefRef.current = brief
   const hasLogoFile = logoCandidates(brief.brand_notes).length > 0
   const previewLogoPath =
     brief.brand_notes.logo_path || logoCandidates(brief.brand_notes)[0] || null
@@ -540,6 +557,54 @@ export function FinalizeStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewTiles.length, noCampaignText, stillGenerating])
 
+  // Auto-translate other languages whenever English source or the language list changes.
+  // Keeps English as-is. Typing English also goes through updateSourceCopy → debounced adapt.
+  useEffect(() => {
+    if (noCampaignText) return
+    if (locales.length < 2) return
+    if (!previewTiles.length) return
+    const source = locales[0] || 'English'
+    const message = (
+      captionText ||
+      activeProductResolved.message ||
+      brief.message ||
+      ''
+    ).trim()
+    const cta = (activeProductResolved.cta || brief.cta || '').trim()
+    const supporting = (
+      subcaptionText ||
+      activeProductResolved.supporting ||
+      brief.supporting_copy ||
+      ''
+    ).trim()
+    if (!message) return
+    const key = [
+      activeProductName || '',
+      locales.join('|'),
+      message,
+      cta,
+      supporting,
+    ].join('::')
+    if (autoLocaleAdaptKey.current === key) return
+    autoLocaleAdaptKey.current = key
+    const nextCopy = {
+      ...localeCopy,
+      [source]: { message, cta, supporting },
+    }
+    scheduleLocaleAdapt(nextCopy, 0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    noCampaignText,
+    locales,
+    previewTiles.length,
+    activeProductName,
+    activeProductResolved.message,
+    activeProductResolved.cta,
+    activeProductResolved.supporting,
+    captionText,
+    subcaptionText,
+  ])
+
   useEffect(() => {
     return () => {
       if (localeAdaptTimer.current) window.clearTimeout(localeAdaptTimer.current)
@@ -731,7 +796,10 @@ export function FinalizeStep({
     await handleSuggest({ mode: 'copy' })
   }
 
-  function scheduleLocaleAdapt(nextCopy: Record<string, { message: string; cta: string; supporting?: string }>) {
+  function scheduleLocaleAdapt(
+    nextCopy: Record<string, { message: string; cta: string; supporting?: string }>,
+    delayMs = 600,
+  ) {
     if (noCampaignText || locales.length < 2) return
     if (localeAdaptTimer.current) window.clearTimeout(localeAdaptTimer.current)
     const source = locales[0] || 'English'
@@ -740,42 +808,73 @@ export function FinalizeStep({
       cta: brief.cta,
       supporting: subcaptionText,
     }
+    const localesSnap = [...locales]
+    const manualSnap = { ...manualLocales }
     localeAdaptTimer.current = window.setTimeout(() => {
       void (async () => {
         const seq = ++localeAdaptSeq.current
         setLocaleSyncBusy(true)
         try {
-          const locked = locales.filter((loc) => loc !== source && manualLocales[loc])
+          const locked = localesSnap.filter((loc) => loc !== source && manualSnap[loc])
           const res = await adaptLocalizeCopy(campaignId, {
             message: sourcePair.message || '',
             cta: sourcePair.cta || '',
             supporting: sourcePair.supporting || '',
-            locales,
+            locales: localesSnap,
             locked_locales: locked,
             existing: nextCopy,
           })
           if (seq !== localeAdaptSeq.current) return
+          const normalized: Record<string, { message: string; cta: string; supporting?: string }> =
+            {}
+          for (const [loc, pair] of Object.entries(res.locales || {})) {
+            const id = normalizeLanguageId(loc)
+            if (!id || !pair) continue
+            normalized[id] = {
+              message: pair.message || '',
+              cta: pair.cta || '',
+              supporting: pair.supporting || '',
+            }
+          }
           setLocaleCopy((prev) => {
-            const merged = { ...prev, ...res.locales }
+            const merged = { ...prev, ...normalized }
             merged[source] = {
               message: sourcePair.message || '',
               cta: sourcePair.cta || '',
               supporting: sourcePair.supporting || '',
             }
             for (const loc of locked) {
+              const id = normalizeLanguageId(loc)
               if (prev[loc]) merged[loc] = prev[loc]
+              if (prev[id]) merged[id] = prev[id]
             }
             return merged
           })
+          // Persist so Review → reopen / Generate → Finalize keeps translations.
+          const nextLocales = { ...(briefRef.current.locales_copy || {}), ...normalized }
+          nextLocales[source] = {
+            message: sourcePair.message || '',
+            cta: sourcePair.cta || '',
+            supporting: sourcePair.supporting || '',
+          }
+          const nextBrief = {
+            ...briefRef.current,
+            locales_copy: nextLocales,
+            localize_to: localesSnap,
+          }
+          briefRef.current = nextBrief
+          setBrief(nextBrief)
         } catch (err) {
+          // Allow a later retry for the same English source.
           if (seq === localeAdaptSeq.current) {
+            autoLocaleAdaptKey.current = ''
             setError(err instanceof Error ? err.message : String(err))
           }
         } finally {
           if (seq === localeAdaptSeq.current) setLocaleSyncBusy(false)
         }
       })()
-    }, 600)
+    }, delayMs)
   }
 
   function updateSourceCopy(patch: Partial<{ message: string; cta: string; supporting: string }>) {
@@ -960,10 +1059,48 @@ export function FinalizeStep({
           <button
             type="button"
             className="btn-ghost"
-            disabled={busy || !previewTiles.length || noCampaignText}
+            disabled={busy || localeSyncBusy || !previewTiles.length || noCampaignText}
             onClick={() => void handleSuggestText()}
           >
             Suggest text
+          </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            disabled={
+              busy ||
+              localeSyncBusy ||
+              !previewTiles.length ||
+              noCampaignText ||
+              locales.length < 2
+            }
+            onClick={() => {
+              autoLocaleAdaptKey.current = ''
+              const source = locales[0] || 'English'
+              const message = (
+                captionText ||
+                activeProductResolved.message ||
+                brief.message ||
+                ''
+              ).trim()
+              const cta = (activeProductResolved.cta || brief.cta || '').trim()
+              const supporting = (
+                subcaptionText ||
+                activeProductResolved.supporting ||
+                brief.supporting_copy ||
+                ''
+              ).trim()
+              if (!message) return
+              scheduleLocaleAdapt(
+                {
+                  ...localeCopy,
+                  [source]: { message, cta, supporting },
+                },
+                0,
+              )
+            }}
+          >
+            {localeSyncBusy ? 'Translating…' : 'Refresh translations'}
           </button>
           <button type="button" className="btn-ghost" disabled={busy} onClick={onBack}>
             Back
@@ -1049,6 +1186,8 @@ export function FinalizeStep({
                           backgroundColor: logoColor,
                           WebkitMaskImage: `url(${outputUrl(previewLogoPath)})`,
                           maskImage: `url(${outputUrl(previewLogoPath)})`,
+                          // Black logos must use alpha masks; luminance treats black as invisible.
+                          maskMode: 'alpha',
                           WebkitMaskSize: 'contain',
                           maskSize: 'contain',
                           WebkitMaskRepeat: 'no-repeat',
@@ -1572,23 +1711,31 @@ export function FinalizeStep({
 
           {localeSyncBusy && (
             <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '0.65rem' }}>
-              Updating other languages from {languageLabel(primaryLoc)}…
+              Translating other languages from {languageLabel(primaryLoc)}…
             </p>
           )}
           {locales.filter((loc) => normalizeLanguageId(loc) !== primaryLoc).length > 0 && (
             <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '0.65rem' }}>
-              Other languages follow {languageLabel(primaryLoc)} unless you check Edit manually.
+              Other languages update automatically from {languageLabel(primaryLoc)}. Check Edit
+              manually to lock a language.
             </p>
           )}
           {locales
             .filter((loc) => normalizeLanguageId(loc) !== primaryLoc)
             .map((loc) => {
             const isManual = Boolean(manualLocales[loc])
-            const pair = localeCopy[loc] || {
-              message: captionText || brief.message,
-              cta: brief.cta,
-              supporting: subcaptionText,
-            }
+            const stored =
+              localeCopy[loc] ||
+              Object.entries(localeCopy).find(
+                ([k]) => normalizeLanguageId(k) === normalizeLanguageId(loc),
+              )?.[1]
+            const sourceMsg = (captionText || brief.message || '').trim()
+            const looksUntranslated =
+              Boolean(stored?.message?.trim()) &&
+              Boolean(sourceMsg) &&
+              stored!.message.trim().toLowerCase() === sourceMsg.toLowerCase()
+            const pair = stored || { message: '', cta: '', supporting: '' }
+            const showPending = !isManual && (!stored?.message?.trim() || looksUntranslated)
             return (
               <div key={loc} style={{ marginBottom: '0.85rem' }}>
                 <div
@@ -1632,14 +1779,20 @@ export function FinalizeStep({
                 </div>
                 <input
                   className="field"
-                  value={pair.message}
+                  value={showPending ? '' : pair.message}
                   onChange={(e) =>
                     setLocaleCopy({
                       ...localeCopy,
                       [loc]: { ...pair, message: e.target.value },
                     })
                   }
-                  placeholder="Headline"
+                  placeholder={
+                    localeSyncBusy
+                      ? 'Translating…'
+                      : showPending
+                        ? 'Auto-translating from English…'
+                        : 'Headline'
+                  }
                   style={{ marginBottom: '0.35rem' }}
                   disabled={
                     activePlacement === 'none' || captionMode === 'skip' || !isManual
@@ -1647,7 +1800,7 @@ export function FinalizeStep({
                 />
                 <input
                   className="field"
-                  value={pair.supporting || ''}
+                  value={showPending ? '' : pair.supporting || ''}
                   onChange={(e) =>
                     setLocaleCopy({
                       ...localeCopy,
@@ -1662,7 +1815,7 @@ export function FinalizeStep({
                 />
                 <input
                   className="field"
-                  value={pair.cta}
+                  value={showPending ? '' : pair.cta}
                   onChange={(e) =>
                     setLocaleCopy({
                       ...localeCopy,

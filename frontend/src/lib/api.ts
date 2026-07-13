@@ -79,6 +79,8 @@ export type Brief = {
   products: Product[]
   brand_notes: BrandNotes
   localize_to: string[]
+  /** Cached per-language overlay copy from Review / Finalize auto-translate. */
+  locales_copy?: Record<string, { message: string; cta: string; supporting?: string }>
   outputs: string[]
   framing?: 'close-up' | 'zoomed' | 'both'
   text_render_mode?: 'composer' | 'ai' | 'hybrid' | 'pillow' | 'none' | 'later'
@@ -620,7 +622,14 @@ export async function adaptLocalizeCopy(
   const res = await fetch(`${API}/campaigns/${id}/localize-copy`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      message: body.message || '',
+      cta: body.cta || '',
+      supporting: body.supporting ?? '',
+      locales: body.locales || [],
+      locked_locales: body.locked_locales || [],
+      existing: body.existing || {},
+    }),
   })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{
@@ -653,6 +662,16 @@ export function outputUrl(path: string) {
   const idx = p.toLowerCase().lastIndexOf(marker)
   if (idx >= 0) p = p.slice(idx + marker.length)
   else if (p.toLowerCase().startsWith('campaigns/')) p = p.slice('campaigns/'.length)
+
+  // Repo seed assets are mounted at /sample-assets (not under /outputs/campaigns).
+  const sampleIdx = p.toLowerCase().lastIndexOf('sample-assets/')
+  if (sampleIdx >= 0) {
+    return `/${p.slice(sampleIdx)}`
+  }
+  if (p.toLowerCase().startsWith('sample-assets/')) {
+    return `/${p}`
+  }
+
   if (p.startsWith('/')) return p
   return `/outputs/${p}`
 }

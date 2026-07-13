@@ -42,17 +42,29 @@ That creates `Desktop/herbie-creative`, then starts the app (venv, packages, ser
 
 If auto-install cannot run (no winget / Homebrew / apt), or winget fails with a **Microsoft Store / msstore** error (common on public or locked-down PCs), the Windows Quick start falls back to a **per-user** install from python.org. If that is blocked too, install Python 3.12+ from https://www.python.org/downloads/ yourself: choose **Install for current user**, check **Add python.exe to PATH**, open a **new** terminal, and paste again.
 
-**Browser alternative (no terminal download):** open https://github.com/echrisclarke/herbie-creative → **Code** → **Download ZIP** → extract to your Desktop → rename to `herbie-creative` if needed → open a terminal in that folder → run `Open App.bat` (Windows) or `./Open\ App.sh` (Mac/Linux). Those launchers also install Python when missing. Or run `py -3 run_app.py` / `python3 run_app.py` after Python is available.
+**Browser alternative (no terminal download):** open https://github.com/echrisclarke/herbie-creative → **Code** → **Download ZIP** → extract to your Desktop → rename to `herbie-creative` if needed → open a terminal in that folder → run `py -3 run_app.py` (Windows) or `python3 run_app.py` (Mac/Linux). Same auto-install behavior when Python is missing. You can also use `Open App.bat` / `./Open App.sh` if you prefer; on Windows, SmartScreen may block the `.bat` until you choose **More info** → **Run anyway** (see [Double-click launchers](#double-click-launchers)).
 
 **Or clone with Git** (if you already use Git):
+
+**Windows (PowerShell):**
+
+```powershell
+cd ~/Desktop   # or your preferred folder
+git clone https://github.com/echrisclarke/herbie-creative.git
+cd herbie-creative
+py -3 run_app.py
+```
+
+**macOS / Linux:**
 
 ```bash
 cd ~/Desktop   # or your preferred folder
 git clone https://github.com/echrisclarke/herbie-creative.git
 cd herbie-creative
+python3 run_app.py
 ```
 
-Then start with `Open App.bat` / `./Open App.sh`, or `py -3 run_app.py` / `python3 run_app.py`. Same auto-install behavior as above when Python is missing.
+That starts the app the same way as Quick start (venv, packages, server, browser). Leave the window open. Prefer `run_app.py` over the `.bat` launchers so Windows SmartScreen does not get in the way. `Open App.bat` / `./Open App.sh` still work if you want them.
 
 Enter your **OpenAI API key** when the app asks (Settings also works). First-time setup is: Herbie Creative start screen → keys (if needed) → pipeline. No Node.js required: `frontend/dist` is included so you can run without installing Node or building the UI first (saves setup time). Optional rebuild from React source is under [Optional: rebuild UI from source](#optional-rebuild-ui-from-source).
 
@@ -60,9 +72,9 @@ If a previous install failed halfway, delete `backend/.venv` (or `backend\.venv`
 
 **Grok / motion:** optional `XAI_API_KEY` in Settings.
 
-### Double-click launchers
+### Double-click launchers (optional)
 
-After the repo is on your machine, you can start and stop with the launchers instead of typing `run_app.py`.
+After the repo is on your machine, you can start and stop with the launchers instead of typing `run_app.py`. Prefer `py -3 run_app.py` / `python3 run_app.py` when you want the least friction, especially on Windows.
 
 **Windows:** double-click `Open App.bat` (stop with `Close App.bat` or close the window).
 
@@ -107,7 +119,7 @@ All three use the same pipeline and write under `campaigns/`.
 
 ### A. UI pipeline
 
-1. Start the app (`py -3 run_app.py` / `python3 run_app.py`, or `Open App.bat` / `./Open App.sh`).
+1. Start the app (`py -3 run_app.py` / `python3 run_app.py`). Optional: `Open App.bat` / `./Open App.sh`.
 2. Open **http://127.0.0.1:8000** and enter your OpenAI key.
 3. On **Intake**, open **Sample briefs** and click **Run this sample** on **Jordan hero zoom** (listed first), or paste/upload your own brief.
 4. **Review** → **Approve & Generate creatives** → **Finalize** (message/logo optional; captions default to bottom-center, except **16:9 → top-right**) → **Results**.
@@ -265,7 +277,7 @@ campaigns/<campaign-id>/
 - Runtime outputs under `campaigns/` are gitignored (regenerate via samples).  
 - Brand/legal checks are basic (logo presence, colors, forbidden words), not a full DAM/compliance suite.  
 - Adobe Firefly is documented as planned, not wired as the default path.  
-- Windows launcher is the primary one-click path; macOS/Linux use the shell scripts + `run_app.py`.
+- After the repo is on disk, start with `py -3 run_app.py` / `python3 run_app.py`. `Open App.bat` / `Open App.sh` are optional shortcuts (Windows SmartScreen may prompt on the `.bat`).
 
 ---
 
@@ -282,7 +294,7 @@ Separate checklist against the FDE Take-Home Lite requirements.
 | When assets are missing, **generate with a GenAI image model** | **generate-concept** (and background product-seed generation when no photos were uploaded) calls OpenAI image generation / edit APIs. |
 | Produce creatives for **at least three aspect ratios** (e.g. 1:1, 9:16, 16:9) | Review defaults and samples set `outputs: ["1:1","9:16","16:9"]`. CLI `smoke` forces those three. Pipeline writes one folder per ratio under each product. |
 | **Display campaign message** on final posts (English at least; localization a plus) | Finalize (and CLI smoke) stamps **per-product** message + CTA when set, else campaign defaults, plus legal. Locales: **en-US / es-ES / zh-CN** on smoke. |
-| **Run locally** (CLI or simple local app) | **A** UI via Quick start / `Open App`. **B** Intake **Run local CLI**. **C** `backend` then `python -m app.cli smoke` (see Three ways to run). |
+| **Run locally** (CLI or simple local app) | **A** UI via Quick start / `run_app.py`. **B** Intake **Run local CLI**. **C** `backend` then `python -m app.cli smoke` (see Three ways to run). |
 | **Save outputs** organized by product and aspect ratio | `campaigns/<id>/outputs/<market>/<product-slug>/<ratio>/`. |
 | **README**: how to run, example I/O, design decisions, assumptions/limitations | This file. |
 
@@ -343,9 +355,9 @@ cd backend
 
 ```text
 creative-automation/
-  Open App.bat / Open App.sh     # one-click start
+  run_app.py                     # preferred start (bootstrap + uvicorn)
+  Open App.bat / Open App.sh     # optional one-click start
   Close App.bat / Close App.sh   # stop server
-  run_app.py                     # bootstrap + uvicorn
   frontend/dist                  # shipped UI
   backend/app                    # FastAPI, pipeline, providers
   sample-briefs/                 # demo JSON briefs

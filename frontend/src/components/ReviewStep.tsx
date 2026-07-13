@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  adaptLocalizeCopy,
   getProductSeeds,
   outputUrl,
   retryProductSeeds,
@@ -82,9 +83,95 @@ export function ReviewStep({
     initialProductSeeds,
   )
   const [seedRetryBusy, setSeedRetryBusy] = useState(false)
+  const [localeSyncBusy, setLocaleSyncBusy] = useState(false)
   const seedsEsRef = useRef<EventSource | null>(null)
   const briefRef = useRef(brief)
   briefRef.current = brief
+  const localeAdaptTimer = useRef<number | null>(null)
+  const localeAdaptKey = useRef('')
+  const localeAdaptSeq = useRef(0)
+
+  // When English copy or the language list changes, pre-translate into brief.locales_copy
+  // so Finalize opens with Spanish/Chinese already filled.
+  useEffect(() => {
+    if ((brief.text_render_mode || '') === 'none') return
+    const locales = [
+      ...new Set((brief.localize_to || []).map(normalizeLanguageId).filter(Boolean)),
+    ]
+    if (locales.length < 2) return
+    const eng = locales.find((l) => normalizeLanguageId(l) === 'English')
+    const ordered = eng ? [eng, ...locales.filter((l) => l !== eng)] : locales
+    const source = ordered[0]
+    const message = (brief.message || '').trim()
+    const cta = (brief.cta || '').trim()
+    const supporting = (brief.supporting_copy || '').trim()
+    if (!message) return
+    const key = [ordered.join('|'), message, cta, supporting].join('::')
+    if (localeAdaptKey.current === key) return
+    if (localeAdaptTimer.current) window.clearTimeout(localeAdaptTimer.current)
+    localeAdaptTimer.current = window.setTimeout(() => {
+      void (async () => {
+        const seq = ++localeAdaptSeq.current
+        localeAdaptKey.current = key
+        setLocaleSyncBusy(true)
+        try {
+          await saveCampaign(campaignId, briefRef.current)
+          const existing = briefRef.current.locales_copy || {}
+          const res = await adaptLocalizeCopy(campaignId, {
+            message,
+            cta,
+            supporting,
+            locales: ordered,
+            locked_locales: [],
+            existing,
+          })
+          if (seq !== localeAdaptSeq.current) return
+          const normalized: Record<string, { message: string; cta: string; supporting?: string }> =
+            {}
+          for (const [loc, pair] of Object.entries(res.locales || {})) {
+            const id = normalizeLanguageId(loc)
+            if (!id || !pair) continue
+            normalized[id] = {
+              message: pair.message || '',
+              cta: pair.cta || '',
+              supporting: pair.supporting || '',
+            }
+          }
+          normalized[source] = { message, cta, supporting }
+          const next = {
+            ...briefRef.current,
+            localize_to: ordered,
+            locales_copy: normalized,
+          }
+          briefRef.current = next
+          setBrief(next)
+          try {
+            await saveCampaign(campaignId, next)
+          } catch {
+            /* keep in-memory translations even if save fails */
+          }
+        } catch (err) {
+          if (seq === localeAdaptSeq.current) {
+            localeAdaptKey.current = ''
+            setLocalError(err instanceof Error ? err.message : String(err))
+          }
+        } finally {
+          if (seq === localeAdaptSeq.current) setLocaleSyncBusy(false)
+        }
+      })()
+    }, 700)
+    return () => {
+      if (localeAdaptTimer.current) window.clearTimeout(localeAdaptTimer.current)
+    }
+  }, [
+    campaignId,
+    brief.message,
+    brief.cta,
+    brief.supporting_copy,
+    brief.localize_to,
+    brief.text_render_mode,
+    setBrief,
+  ])
 
   useEffect(() => {
     let cancelled = false
@@ -377,6 +464,8 @@ export function ReviewStep({
                 try {
                   const res = await suggestCopy(campaignId)
                   setBrief(res.brief)
+                  // Force a fresh auto-translate from the new English lines.
+                  localeAdaptKey.current = ''
                 } catch (err) {
                   setLocalError(err instanceof Error ? err.message : String(err))
                 } finally {
@@ -386,6 +475,11 @@ export function ReviewStep({
             >
               {suggestBusy ? 'Suggesting copy…' : 'Suggest copy from brief'}
             </button>
+            {localeSyncBusy && (
+              <p style={{ color: 'var(--muted)', fontSize: '0.82rem', marginTop: '0.45rem' }}>
+                Translating other languages…
+              </p>
+            )}
           </div>
           <Field
             label="Default creative direction"
@@ -637,7 +731,7 @@ export function ReviewStep({
           <div style={{ marginTop: '1rem' }}>
             <div style={{ color: 'var(--muted)', marginBottom: '0.5rem' }}>
               Output languages (optional, up to 5). Leave empty to choose in Finalize. Same
-              creative; AI writes message/CTA in each language you pick.
+              creative; other languages auto-translate from your English message/CTA.
             </div>
             {(brief.localize_to || []).length === 0 ? (
               <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: '0 0 0.65rem' }}>

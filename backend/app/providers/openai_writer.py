@@ -21,6 +21,58 @@ def _is_english_locale(locale: str) -> bool:
     return loc.startswith("english ") or loc.startswith("en-")
 
 
+# Keep in sync with frontend/src/lib/languages.ts aliases.
+_LANGUAGE_ALIASES: dict[str, str] = {
+    "en": "English",
+    "en-us": "English",
+    "en-gb": "English",
+    "en-au": "English",
+    "en-ca": "English",
+    "english": "English",
+    "es": "Spanish",
+    "es-es": "Spanish",
+    "es-mx": "Spanish",
+    "es-us": "Spanish",
+    "es-ar": "Spanish",
+    "spanish": "Spanish",
+    "zh": "Chinese (Mandarin)",
+    "zh-cn": "Chinese (Mandarin)",
+    "zh-hans": "Chinese (Mandarin)",
+    "zh-sg": "Chinese (Mandarin)",
+    "chinese (mandarin)": "Chinese (Mandarin)",
+    "zh-hk": "Chinese (Cantonese)",
+    "zh-tw": "Chinese (Cantonese)",
+    "yue": "Chinese (Cantonese)",
+    "fr": "French",
+    "fr-fr": "French",
+    "fr-ca": "French",
+    "de": "German",
+    "de-de": "German",
+    "pt-br": "Portuguese (Brazil)",
+    "pt": "Portuguese (Portugal)",
+    "pt-pt": "Portuguese (Portugal)",
+    "ja": "Japanese",
+    "ja-jp": "Japanese",
+    "ko": "Korean",
+    "ko-kr": "Korean",
+    "hi": "Hindi",
+    "hi-in": "Hindi",
+    "ar": "Arabic",
+    "ru": "Russian",
+}
+
+
+def normalize_language_id(raw: str) -> str:
+    """Map BCP-47 / alias codes to the display language ids the UI uses."""
+    trimmed = (raw or "").strip()
+    if not trimmed:
+        return "English"
+    mapped = _LANGUAGE_ALIASES.get(trimmed.lower())
+    if mapped:
+        return mapped
+    return trimmed
+
+
 def copy_looks_untranslated(candidate: str, source: str) -> bool:
     """True when candidate is empty or still essentially the English source."""
     import difflib
@@ -57,13 +109,24 @@ def fill_localized_copy(
     """
     writer = OpenAIWriter()
     existing = locales or {}
-    wanted = language_list if language_list is not None else (brief.localize_to or ["English"])
+    wanted_raw = language_list if language_list is not None else (brief.localize_to or ["English"])
+    wanted = [normalize_language_id(x) for x in wanted_raw]
+    # De-dupe after alias fold (en-US + English → one English slot).
+    seen: set[str] = set()
+    wanted_unique: list[str] = []
+    for loc in wanted:
+        key = loc.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        wanted_unique.append(loc)
+    wanted = wanted_unique
     out: dict[str, dict[str, str]] = {}
     source_msg = (brief.message or "").strip()
     source_cta = (brief.cta or "").strip()
     source_sup = (brief.supporting_copy or "").strip()
     for loc in wanted:
-        prev = existing.get(loc) or {}
+        prev = existing.get(loc) or existing.get(normalize_language_id(loc)) or {}
         if isinstance(prev, dict):
             msg = str(prev.get("message") or "").strip()
             cta = str(prev.get("cta") or "").strip()
