@@ -6,6 +6,14 @@ Built for the FDE Take-Home Lite exercise (creative automation for scalable soci
 
 **Run it three ways:** UI pipeline, **Local CLI** from Intake, or CLI in your own terminal. See [Three ways to run](#three-ways-to-run).
 
+## How-to video and example outputs
+
+Walkthrough video plus sample stills, localized finals, and a motion clip:
+
+**[Clarke How To and Examples (Google Photos)](https://photos.app.goo.gl/yTQzG8yhnPbUhHjB9)**
+
+https://photos.app.goo.gl/yTQzG8yhnPbUhHjB9
+
 ---
 
 ## Quick start (any computer)
@@ -313,7 +321,7 @@ Separate checklist against the FDE Take-Home Lite requirements.
 | Working POC pipeline | This repository |
 | Comprehensive README | This file |
 | Public GitHub repo | Published from this project root |
-| 2–3 minute demo video | Record separately and send to Talent Partner (≥1 day before interview). Suggested path: **Run local CLI** (Jordan hero zoom, disclaimer + en/es/zh finals), or Intake **Jordan hero zoom** sample → Review → Generate (low) → Finalize with message/CTA/legal → Results. Same brief either way. |
+| 2–3 minute demo video | How-to video and example outputs: [Clarke How To and Examples](https://photos.app.goo.gl/yTQzG8yhnPbUhHjB9). Suggested local path to regenerate: **Run local CLI** (Jordan hero zoom) or Intake sample → Review → Generate → Finalize → Results. |
 
 ---
 
