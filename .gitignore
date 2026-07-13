@@ -31,3 +31,7 @@ docs/references/
 
 # One-off local repair / experiment scripts (not part of the runnable app)
 backend/scripts/
+
+# Local demo media (keep on disk; do not ship in clone/ZIP)
+example-outputs/
+how-to/
