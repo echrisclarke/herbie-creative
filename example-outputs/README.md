@@ -1,6 +1,12 @@
 ﻿# Example outputs
 
-Sample stills and stamped finals from **Herbie Creative Campaign Pipeline** (Jordan Frozen Moments hero demo).
+Sample stills, stamped finals, and a short how-to demo from **Herbie Creative Campaign Pipeline** (Jordan Frozen Moments hero).
+
+## How-to video
+
+- `clarke-how-to-demo.mp4` — walkthrough of setup and use (Git LFS)
+
+## Still / final examples
 
 | File | What it is |
 |------|------------|
