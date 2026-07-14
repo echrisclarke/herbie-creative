@@ -21,8 +21,11 @@ type ResultTile = {
 
 const BASE_RATIOS = ['1:1', '9:16', '16:9'] as const
 
+/** Frame path for this row (locale finals keep their own final.*.png, not the shared creative). */
 function stillSource(c: CreativeResult) {
-  return c.creative_path || c.path
+  const path = String(c.path || '').replace(/\\/g, '/')
+  if (path && !path.toLowerCase().endsWith('.mp4')) return path
+  return String(c.creative_path || c.path || '').replace(/\\/g, '/')
 }
 
 function baseRatio(raw: string): string {
@@ -39,8 +42,8 @@ function isFinalStillPath(path: string) {
 }
 
 function isMotionEligibleStill(c: CreativeResult) {
-  const path = String(c.path || '').toLowerCase()
-  if (path.endsWith('.mp4')) return false
+  const path = stillSource(c).toLowerCase()
+  if (!path || path.endsWith('.mp4')) return false
   if ((c.locale || '') === 'motion') return false
   // No-text creatives and finalized (with-text) stills are both valid motion sources.
   if (isFinalStillPath(path)) return true

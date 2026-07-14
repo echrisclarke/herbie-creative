@@ -6,8 +6,11 @@ import { planCreativeCounts } from '../lib/creativeCounts'
 import type { MotionGenerateRequest } from '../lib/motionJobs'
 import { PipelineCountBanner } from './PipelineCountBanner'
 
+/** Frame to animate: use the row's own still path so each locale/final stays distinct. */
 function stillSource(c: CreativeResult) {
-  return c.creative_path || c.path
+  const path = String(c.path || '').replace(/\\/g, '/')
+  if (path && !path.toLowerCase().endsWith('.mp4')) return path
+  return String(c.creative_path || c.path || '').replace(/\\/g, '/')
 }
 
 function baseRatio(raw: string): string {
@@ -24,27 +27,23 @@ function isFinalStillPath(path: string) {
 }
 
 function isMotionEligibleStill(c: CreativeResult) {
-  const path = String(c.path || '').toLowerCase()
-  if (path.endsWith('.mp4')) return false
+  const path = stillSource(c).toLowerCase()
+  if (!path || path.endsWith('.mp4')) return false
   if ((c.locale || '') === 'motion') return false
   if (isFinalStillPath(path)) return true
   return (c.locale || '') === 'creative' || path.includes('creative')
 }
 
-function preferStill(a: CreativeResult, b: CreativeResult) {
-  const ap = String(a.path || '').toLowerCase()
-  const bp = String(b.path || '').toLowerCase()
-  const aScore =
-    (ap.endsWith('creative.png') ? 3 : 0) +
-    (ap.includes('creative.tight') ? 1 : 0) +
-    (ap.includes('creative') ? 1 : 0) +
-    (isFinalStillPath(ap) ? 2 : 0)
-  const bScore =
-    (bp.endsWith('creative.png') ? 3 : 0) +
-    (bp.includes('creative.tight') ? 1 : 0) +
-    (bp.includes('creative') ? 1 : 0) +
-    (isFinalStillPath(bp) ? 2 : 0)
-  return bScore - aScore
+function compareStills(a: CreativeResult, b: CreativeResult) {
+  const ap = stillSource(a)
+  const bp = stillSource(b)
+  return (
+    a.product.localeCompare(b.product) ||
+    baseRatio(a.ratio).localeCompare(baseRatio(b.ratio)) ||
+    String(a.ratio).localeCompare(String(b.ratio)) ||
+    String(a.locale || '').localeCompare(String(b.locale || '')) ||
+    ap.localeCompare(bp)
+  )
 }
 
 function fileLabel(path: string) {
@@ -88,7 +87,10 @@ function StillPickGrid({
               {c.product} · {baseRatio(c.ratio)}
               {String(c.ratio).includes('tight') || path.toLowerCase().includes('tight')
                 ? ' · close-up'
-                : ''}
+                : String(c.ratio).includes('zoomed')
+                  ? ' · zoomed'
+                  : ''}
+              {c.locale && c.locale !== 'creative' ? ` · ${c.locale}` : ''}
               {isFinalStillPath(path) ? ' · with text' : ' · creative'}
               {hasMotion ? ' · has motion' : ''}
             </div>
@@ -150,14 +152,16 @@ export function MotionStep({
   }, [campaignId, brief.motion_notes, brief.likeness_reference_paths, brief.style_reference_paths])
 
   const motionStillOptions = useMemo(() => {
-    const eligible = report.creatives.filter(isMotionEligibleStill)
-    const byKey = new Map<string, CreativeResult>()
-    for (const c of eligible) {
-      const key = `${c.product}|${baseRatio(c.ratio)}|${isFinalStillPath(stillSource(c)) ? 'final' : 'creative'}`
-      const prev = byKey.get(key)
-      if (!prev || preferStill(c, prev) < 0) byKey.set(key, c)
+    // One option per unique still path: creatives, close-ups, and every locale final.
+    const byPath = new Map<string, CreativeResult>()
+    for (const c of report.creatives) {
+      if (!isMotionEligibleStill(c)) continue
+      const path = stillSource(c)
+      if (!path) continue
+      const key = path.toLowerCase()
+      if (!byPath.has(key)) byPath.set(key, c)
     }
-    return Array.from(byKey.values())
+    return Array.from(byPath.values()).sort(compareStills)
   }, [report.creatives])
 
   useEffect(() => {
