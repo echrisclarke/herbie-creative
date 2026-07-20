@@ -20,17 +20,15 @@ https://photos.app.goo.gl/yTQzG8yhnPbUhHjB9
 
 These steps put the app on your **Desktop** and start it. **Git is not required.** The open terminal **is** the local server, so leave it running while you use the app. Stop with `Ctrl+C` (or close the window).
 
-**Which start path is for whom**
+**Ways to start**
 
-| Path | Meant for |
+| Path | Notes |
 |---|---|
-| **One-line paste** (below) | Other machines and reviewers. Primary handoff. |
-| **Download ZIP** + `run_app.py` | Other machines if you prefer not to pipe a script. |
-| **Git clone** + `run_app.py` | Other machines if you already use Git. |
-| **Optional npm rebuild** | Other machines only if you want to change the React source. Not required to open the app (`frontend/dist` is already included). |
-| **`Open App.bat` / `Open App.sh`** | Mostly the author’s own machine. Not the recommended way to send this to someone else. |
-
-Windows SmartScreen, download “Mark of the Web,” macOS Gatekeeper / quarantine, and similar OS security features often block or scare people off double-click `.bat` / `.sh` launchers on another computer. That is expected. Those files are local convenience for the author after the repo is already on disk. For any other workspace, use the one-line Quick start, or ZIP / clone plus `py -3 run_app.py` / `python3 run_app.py`.
+| **One-line paste** (below) | Puts the app on your Desktop and starts it. |
+| **Download ZIP** + `run_app.py` | Same start without pasting a script. |
+| **Git clone** + `run_app.py` | Same start if you already use Git. |
+| **Optional npm rebuild** | For editing the React source. `frontend/dist` is already in the repo. |
+| **`Open App.bat` / `Open App.sh`** | Mostly for me. On other computers Windows SmartScreen (and the Mac equivalents) often block them. |
 
 The paste below runs a one-line bootstrap: it checks for **Python 3.12+** and installs it when missing (winget on Windows, Homebrew on macOS, apt on Debian/Ubuntu), then downloads the app and starts it. First run also installs Python packages, then opens **http://127.0.0.1:8000**.
 
@@ -62,7 +60,7 @@ That creates `Desktop/herbie-creative`, then starts the app (venv, packages, ser
 
 If auto-install cannot run (no winget / Homebrew / apt), or winget fails with a **Microsoft Store / msstore** error (common on public or locked-down PCs), the Windows Quick start falls back to a **per-user** install from python.org. If that is blocked too, install Python 3.12+ from https://www.python.org/downloads/ yourself: choose **Install for current user**, check **Add python.exe to PATH**, open a **new** terminal, and paste again.
 
-**Browser alternative (no terminal download):** open https://github.com/echrisclarke/herbie-creative → **Code** → **Download ZIP** → extract to your Desktop → rename to `herbie-creative` if needed → open a terminal in that folder → run `py -3 run_app.py` (Windows) or `python3 run_app.py` (Mac/Linux). Same auto-install behavior when Python is missing. This is a supported path for other machines (not the double-click launchers).
+**Browser alternative (no terminal download):** open https://github.com/echrisclarke/herbie-creative → **Code** → **Download ZIP** → extract to your Desktop → rename to `herbie-creative` if needed → open a terminal in that folder → run `py -3 run_app.py` (Windows) or `python3 run_app.py` (Mac/Linux). Same auto-install behavior when Python is missing.
 
 **Or clone with Git** (if you already use Git):
 
@@ -84,40 +82,32 @@ cd herbie-creative
 python3 run_app.py
 ```
 
-That starts the app the same way as Quick start (venv, packages, server, browser). Leave the window open. On another machine, stay on `run_app.py` after clone or ZIP. Do not rely on `Open App.bat` / `Open App.sh` as the handoff (see [Double-click launchers](#double-click-launchers-author-local-convenience)).
+That starts the app the same way as Quick start (venv, packages, server, browser). Leave the window open. After clone or ZIP, start with `run_app.py`.
 
-Enter your **OpenAI API key** when the app asks (Settings also works). First-time setup is: Herbie Creative start screen → keys (if needed) → pipeline. No Node.js required: `frontend/dist` is included so you can run without installing Node or building the UI first (saves setup time). Optional rebuild from React source (npm) is under [Optional: rebuild UI from source](#optional-rebuild-ui-from-source). That npm path is for changing the frontend, not for first open.
+Enter your **OpenAI API key** when the app asks (Settings also works). First-time setup is: Herbie Creative start screen → keys (if needed) → pipeline. No Node.js required: `frontend/dist` is included. Optional React rebuild: [Optional: rebuild UI from source](#optional-rebuild-ui-from-source).
 
 If a previous install failed halfway, delete `backend/.venv` (or `backend\.venv` on Windows) and run `py -3 run_app.py` / `python3 run_app.py` again from inside `herbie-creative`.
 
 **Grok / motion:** optional `XAI_API_KEY` in Settings.
 
-### Double-click launchers (author local convenience)
+### Open App.bat / Open App.sh (mostly for me)
 
-`Open App.bat`, `Close App.bat`, `Open App.sh`, and `Close App.sh` are **mostly for the author’s own local workspace**. They are not the best way to hand this project to someone else.
+I left `Open App.bat`, `Close App.bat`, `Open App.sh`, and `Close App.sh` in the repo because they’re handy for me. I know they don’t travel well. On other computers, Windows SmartScreen and Mac security warnings often stop a downloaded `.bat` or `.sh` from just running.
 
-On other computers, OS security often gets in the way:
-
-- **Windows:** SmartScreen and “Mark of the Web” on downloaded `.bat` files commonly block or warn hard (*Windows protected your PC*).
-- **macOS:** Gatekeeper / quarantine on downloaded `.sh` files often requires extra clicks, `chmod +x`, or clearing quarantine before a shell launcher will run.
-- **Linux:** execute-bit / policy differences vary by machine.
-
-That friction is why the README leads with **one-line Quick start**, **ZIP + `run_app.py`**, and **Git clone + `run_app.py`** for other machines. Optional **npm** rebuild is also for other machines when someone wants to edit the React source. Use those paths for review. Use the double-click launchers only if the repo is already trusted on your disk and you prefer one click.
-
-**If you still want the Windows launcher on a machine where it is already unblocked:** double-click `Open App.bat` (stop with `Close App.bat` or close the window). If Windows shows *Windows protected your PC*, click **More info** → **Run anyway**, or unblock first: right-click the ZIP or `.bat` → **Properties** → **Unblock** → **OK**, or in the project folder run:
+**Windows:** double-click `Open App.bat` (stop with `Close App.bat` or close the window). If Windows shows *Windows protected your PC*, click **More info** → **Run anyway**, or unblock first: right-click the ZIP or `.bat` → **Properties** → **Unblock** → **OK**, or in the project folder run:
 
 ```powershell
 Get-ChildItem -File | Unblock-File
 ```
 
-**macOS / Linux (same caveat: author-local convenience):**
+**macOS / Linux:**
 
 ```bash
 chmod +x "Open App.sh" "Close App.sh"
 ./Open\ App.sh
 ```
 
-Stop with `./Close\ App.sh`. Launchers can auto-install Python via winget / Homebrew / apt when missing. Prefer `python3 run_app.py` on another Mac/Linux machine.
+Stop with `./Close\ App.sh`. These can auto-install Python via winget / Homebrew / apt when missing.
 
 ### Keys
 
@@ -145,7 +135,7 @@ All three use the same pipeline and write under `campaigns/`.
 
 ### A. UI pipeline
 
-1. Start the app with `py -3 run_app.py` / `python3 run_app.py` (or the one-line Quick start). Double-click launchers are author-local only.
+1. Start the app with `py -3 run_app.py` / `python3 run_app.py` (or the one-line Quick start). The `.bat` / `.sh` launchers are mostly for me.
 2. Open **http://127.0.0.1:8000** and enter your OpenAI key.
 3. On **Intake**, open **Sample briefs** and click **Run this sample** on **Jordan hero zoom** (listed first), or paste/upload your own brief.
 4. **Review** → **Approve & Generate creatives** → **Finalize** (message/logo optional; captions default to bottom-center, except **16:9 → top-right**) → **Results**.
@@ -303,7 +293,7 @@ campaigns/<campaign-id>/
 - Runtime outputs under `campaigns/` are gitignored (regenerate via samples).  
 - Brand/legal checks are basic (logo presence, colors, forbidden words), not a full DAM/compliance suite.  
 - Adobe Firefly is documented as planned, not wired as the default path.  
-- For other machines, start with one-line Quick start, or ZIP / clone plus `py -3 run_app.py` / `python3 run_app.py`. `Open App.bat` / `Open App.sh` are author-local convenience. SmartScreen, Gatekeeper, and similar security features often stop those launchers on someone else’s computer.
+- `Open App.bat` / `Open App.sh` are mostly for me. SmartScreen and Mac security warnings often stop them on someone else’s machine.
 
 ---
 
@@ -381,9 +371,9 @@ cd backend
 
 ```text
 creative-automation/
-  run_app.py                     # start for other machines (bootstrap + uvicorn)
-  Open App.bat / Open App.sh     # author-local one-click (often blocked elsewhere)
-  Close App.bat / Close App.sh   # author-local stop
+  run_app.py                     # normal start (bootstrap + uvicorn)
+  Open App.bat / Open App.sh     # mostly for me (often blocked elsewhere)
+  Close App.bat / Close App.sh   # stop server
   frontend/dist                  # shipped UI (no npm needed to open)
 
   backend/app                    # FastAPI, pipeline, providers
@@ -394,4 +384,4 @@ creative-automation/
 
 ## License / keys note for reviewers
 
-Use **your own** API keys. Do not ask the author for keys, and do not commit `.env` or `private/`.
+Use **your own** API keys. Don’t ask me for keys, and don’t commit `.env` or `private/`.
