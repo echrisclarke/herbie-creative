@@ -2,9 +2,11 @@
 
 Local proof-of-concept for **creative automation of social ad campaigns**: turn a campaign brief and product assets into multi-ratio stills, then optionally stamp brand-safe message, CTA, and logo on finals.
 
-Built for the FDE Take-Home Lite exercise (creative automation for scalable social campaigns). Stack: **FastAPI + React**, local folders as mock storage, **OpenAI** for GenAI image/copy, **Pillow** for deterministic text/logo overlays, optional **xAI/Grok** for motion.
+Built for the FDE Take-Home Lite exercise (creative automation for scalable social campaigns). The brief asks you to **run locally** as a **command-line tool or a simple local app**. This repo is the local app (browser UI). The Local CLI / `smoke` path is there too so the bare minimum checklist can run in one pass on the same engine.
 
-**Run it three ways:** UI pipeline, **Local CLI** from Intake, or CLI in your own terminal. See [Three ways to run](#three-ways-to-run).
+Stack: **FastAPI + React**, local folders as mock storage, **OpenAI** for GenAI image/copy, **Pillow** for deterministic text/logo overlays, optional **xAI/Grok** for motion.
+
+**Run it three ways:** UI pipeline (primary), **Local CLI** from Intake, or CLI in your own terminal. See [Three ways to run](#three-ways-to-run).
 
 ## How-to video and example outputs
 
@@ -125,11 +127,13 @@ Copy `.env.example` → `.env` if you prefer files over the UI. **Use your own k
 
 After the app is on your machine and you have an **OpenAI API key**, pick one path.
 
+The exercise allows a CLI **or** a simple local app. **A** is that local app. **B** and **C** are the bare-minimum style path: one command covers the checklist (two products, three ratios, message on finals, organized outputs, report) without walking every UI step. Same pipeline either way.
+
 | Path | What it is | Best for |
 |---|---|---|
-| **A. UI pipeline** | Full local app in the browser | Interactive Review → Generate → Finalize → Results |
-| **B. Local CLI from the UI** | Intake button opens a terminal and runs the CLI | Same Jordan hero zoom smoke, without walking the UI |
-| **C. Local CLI yourself** | You run the CLI in a terminal | Scripting, demos, or reviewers who prefer CLI only |
+| **A. UI pipeline** | Simple local app in the browser (primary) | Interactive Review → Generate → Finalize → Results |
+| **B. Local CLI from the UI** | Intake button opens a terminal and runs `smoke` | Bare-minimum checklist in one pass, without walking the UI |
+| **C. Local CLI yourself** | You run `smoke` in a terminal | Same bare-minimum path from a shell; scripting or demos |
 
 All three use the same pipeline and write under `campaigns/`.
 
@@ -181,7 +185,7 @@ cd backend
 python -m app.cli smoke
 ```
 
-`smoke` is the fixed local CLI path (Jordan hero zoom). Alias `assignment` still works.
+`smoke` is the fixed bare-minimum CLI path (Jordan hero zoom). Alias `assignment` still works. It exists so reviewers who want the checklist in one shot do not have to click through the UI. It is not the only way the exercise said to run locally.
 
 Defaults favor a complete exercise demo at practical speed: **quality=low**, **framing=zoomed**, **both products × three ratios**, finals with **message + CTA + legal** in **en-US / es-ES / zh-CN**, plus `report.json` and compliance flags. Each ratio is generated, written, and finalized before the next, so you can open the campaign folder or the UI Library / Gallery and watch tiles appear. Smoke writes a fresh campaign id (`jordan-hero-zoom-cli-…`) so runs show up as their own campaign. Pass `--image-quality medium` (or `high`) if you want richer gens.
 
@@ -224,7 +228,7 @@ You do **not** need to write a brief or upload files to test the pipeline. JSON 
 | Card-o-Bot apartment deck / hologram deal | Extra Card-o-Bot scenes. |
 | Spitfire Deathmask II (US) | Optional skate campaign (two products). |
 
-**Suggested first try:** **Run local CLI**, or **Jordan hero zoom** in the UI. For a richer UI demo after that, try Jordan Frozen Moments (candid) or Card-o-Bot.
+**Suggested first try:** **Jordan hero zoom** in the UI (path A), or **Run local CLI** if you want the bare-minimum checklist in one pass. For a richer UI demo after that, try Jordan Frozen Moments (candid) or Card-o-Bot.
 
 ### What gets staged
 
@@ -275,6 +279,7 @@ campaigns/<campaign-id>/
 
 ## Design decisions
 
+- **Local app first, CLI for the bare minimum.** The take-home allows a command-line tool or a simple local app. The browser UI is that app. Local CLI / `smoke` meets the same minimum requirements in one automated pass on the same engine.
 - **Local folders as storage.** `campaigns/` is the mock object store (Azure/S3/Dropbox-shaped layout without cloud SDKs). Easy to swap later.
 - **Two-phase creatives.** GenAI produces clean heroes first; Finalize applies exact brand text with Pillow so copy stays character-accurate and editable.
 - **Per-product copy and scenes.** Campaign message/CTA/direction are defaults. Each product can override them (and attach its own style/background refs) so a multi-product run does not stamp one shoe's line or set onto another.
@@ -310,7 +315,7 @@ Separate checklist against the FDE Take-Home Lite requirements.
 | When assets are missing, **generate with a GenAI image model** | **generate-concept** (and background product-seed generation when no photos were uploaded) calls OpenAI image generation / edit APIs. |
 | Produce creatives for **at least three aspect ratios** (e.g. 1:1, 9:16, 16:9) | Review defaults and samples set `outputs: ["1:1","9:16","16:9"]`. CLI `smoke` forces those three. Pipeline writes one folder per ratio under each product. |
 | **Display campaign message** on final posts (English at least; localization a plus) | Finalize (and CLI smoke) stamps **per-product** message + CTA when set, else campaign defaults, plus legal. Locales: **en-US / es-ES / zh-CN** on smoke. |
-| **Run locally** (CLI or simple local app) | **A** UI via Quick start / `run_app.py`. **B** Intake **Run local CLI**. **C** `backend` then `python -m app.cli smoke` (see Three ways to run). |
+| **Run locally** (CLI **or** simple local app) | Exercise allows either. **A** is the simple local app (Quick start / `run_app.py`). **B** / **C** are the bare-minimum CLI (`smoke`) on the same engine (see Three ways to run). |
 | **Save outputs** organized by product and aspect ratio | `campaigns/<id>/outputs/<market>/<product-slug>/<ratio>/`. |
 | **README**: how to run, example I/O, design decisions, assumptions/limitations | This file. |
 
