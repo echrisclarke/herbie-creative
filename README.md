@@ -381,7 +381,3 @@ creative-automation/
   sample-assets/                 # demo logos / product refs
   campaigns/                     # local runtime storage (gitignored)
 ```
-
-## License / keys note for reviewers
-
-Use **your own** API keys. Don’t ask me for keys, and don’t commit `.env` or `private/`.
