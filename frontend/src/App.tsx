@@ -39,6 +39,7 @@ import {
   type ImageQuality,
   type ProductSeedsStatus,
   type Report,
+  type TrialStatus,
 } from './lib/api'
 import { countNoTextCreatives, planCreativeCounts } from './lib/creativeCounts'
 import type { MotionGenerateRequest, MotionJob } from './lib/motionJobs'
@@ -84,6 +85,8 @@ export default function App() {
   const [desktopTools, setDesktopTools] = useState(true)
   const [authReady, setAuthReady] = useState(false)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [trial, setTrial] = useState<TrialStatus | null>(null)
+  const [forceAuth, setForceAuth] = useState(false)
   const [tab, setTab] = useState<AppTab>('pipeline')
   const [step, setStep] = useState(0)
   /** Highest step unlocked this run. Going back must not lock Finalize/Motion/Results. */
@@ -121,6 +124,8 @@ export default function App() {
         setOpenaiConfigured(h.openai_configured !== false)
         setHosted(Boolean(h.hosted))
         setDesktopTools(h.desktop_tools !== false)
+        setTrial(h.trial || null)
+        if (h.auth_required) setForceAuth(true)
         setHealthReady(true)
       })
       .catch(() => {
@@ -148,12 +153,24 @@ export default function App() {
     refreshAuth()
   }, [])
 
+  const guestTrialActive =
+    hosted && !authUser && Boolean(trial?.can_use_host_openai || (trial?.remaining ?? 0) > 0)
+
   useEffect(() => {
-    // After landing: block the wizard until a key is saved or the user skips setup.
+    // After landing: block the wizard until a key is saved, trial covers it, or skip.
     if (!healthReady || showLanding || installSkipped || openaiConfigured) return
-    if (hosted && !authUser) return
+    if (hosted && !authUser && !guestTrialActive) return
+    if (guestTrialActive) return
     setShowInstall(true)
-  }, [healthReady, showLanding, installSkipped, openaiConfigured, hosted, authUser])
+  }, [
+    healthReady,
+    showLanding,
+    installSkipped,
+    openaiConfigured,
+    hosted,
+    authUser,
+    guestTrialActive,
+  ])
 
   function finishInstallGate() {
     setInstallSkipped(true)
@@ -781,10 +798,18 @@ export default function App() {
     )
   }
 
-  if (hosted && !authUser) {
+  // Guest free trial first; only force signup after trials are used up (or user asks).
+  if (hosted && !authUser && (forceAuth || trial?.requires_signup)) {
     return (
       <LoginScreen
+        initialMode="signup"
+        trialMessage={
+          trial?.requires_signup
+            ? 'Free trial finished. Create an account and add your own OpenAI key to keep going.'
+            : undefined
+        }
         onSignedIn={() => {
+          setForceAuth(false)
           refreshAuth()
           refreshHealth()
         }}
@@ -846,6 +871,15 @@ export default function App() {
             >
               Settings
             </button>
+            {hosted && !authUser && (
+              <button
+                type="button"
+                className="app-tab"
+                onClick={() => setForceAuth(true)}
+              >
+                Sign up
+              </button>
+            )}
             {authUser && (
               <button
                 type="button"
@@ -862,6 +896,15 @@ export default function App() {
             )}
           </nav>
         </div>
+        {guestTrialActive && (
+          <div className="banner" style={{ margin: '0.75rem 1.25rem 0' }}>
+            Free trial: {trial?.remaining ?? 0} of {trial?.limit ?? 3} generate runs left
+            {typeof trial?.stills_remaining === 'number'
+              ? ` · up to ${trial.stills_remaining} stills remaining`
+              : ''}
+            . Sign up anytime to save work with your own API keys.
+          </div>
+        )}
         {tab === 'pipeline' && (
           <div className="app-chrome-steps">
             <WizardStepper

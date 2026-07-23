@@ -38,11 +38,10 @@ export function SettingsPanel({
           ? 'Enter your own OpenAI, Grok, and Google Fonts keys. They are encrypted for your account only.'
           : 'Enter your own OpenAI, Grok, and Google Fonts keys. They are stored locally and never shipped with a public build.'}
       </p>
-      {hosted && trial && !trial.has_own_openai && (
+      {hosted && trial?.mode === 'account' && !trial.has_own_openai && (
         <p className="banner" style={{ marginTop: '0.75rem' }}>
-          {typeof trial.remaining === 'number' && trial.remaining > 0
-            ? `Free trial: ${trial.remaining} of ${trial.limit ?? 3} generate runs left on the shared demo key. After that, add your own OpenAI key.`
-            : 'Free trial used up. Add your own OpenAI API key to keep generating.'}
+          Add your own OpenAI API key to generate. The free trial runs on the shared demo key before
+          you create an account.
         </p>
       )}
       {authUser && (

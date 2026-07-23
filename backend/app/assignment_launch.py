@@ -60,7 +60,7 @@ def _write_windows_runner(cmd: list[str]) -> Path:
     lines = [
         "@echo off",
         "setlocal",
-        "title Herbie Creative - local CLI",
+        "title Herbie Creative Campaign Pipeline - local CLI",
         f"cd /d {_win_quote(BACKEND)}",
         "if errorlevel 1 (",
         "  echo Could not open project folder:",

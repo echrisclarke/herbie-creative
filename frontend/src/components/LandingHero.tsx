@@ -30,7 +30,7 @@ export function LandingHero({ onEnter }: { onEnter: () => void }) {
   const heroMp4 = publicUrl('/brand/hero.mp4')
   const heroPng = publicUrl('/brand/hero.png')
   return (
-    <section className="landing-hero" aria-label="Herbie Creative intro">
+    <section className="landing-hero" aria-label="Herbie Creative Campaign Pipeline intro">
       <video
         className="landing-hero-media"
         src={heroMp4}

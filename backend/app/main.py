@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import (
@@ -50,30 +51,9 @@ from app.user_secrets import settings_snapshot, update_keys
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("api")
 
-app = FastAPI(title="Herbie Creative", version="0.1.0")
+app = FastAPI(title="Herbie Creative Campaign Pipeline", version="0.1.0")
 
 _ROOT_PATH = root_path()
-
-# Session must be outermost so request.session is available in auth middleware.
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=secret_key(),
-    session_cookie="herbie_session",
-    same_site="lax",
-    https_only=hosted_mode(),
-    max_age=60 * 60 * 24 * 14,
-    path=_ROOT_PATH or "/",
-)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-# Outermost: strip /pipeline so routes stay at /health, /campaigns, …
-if _ROOT_PATH:
-    app.add_middleware(RootPathMiddleware, prefix=_ROOT_PATH)
 
 outputs_root = campaigns_base()
 outputs_root.mkdir(parents=True, exist_ok=True)
@@ -99,7 +79,17 @@ _PUBLIC_PREFIXES = (
 )
 
 
+def _app_path(path: str) -> str:
+    """Normalize request path after /pipeline prefix (middleware may see either form)."""
+    prefix = _ROOT_PATH
+    if prefix and (path == prefix or path.startswith(prefix + "/")):
+        stripped = path[len(prefix) :] or "/"
+        return stripped
+    return path or "/"
+
+
 def _requires_auth(path: str) -> bool:
+    path = _app_path(path)
     if path in {"/health", "/auth/login", "/auth/signup", "/auth/me", "/favicon.ico"}:
         return False
     if path.startswith(_PUBLIC_PREFIXES):
@@ -134,6 +124,88 @@ def _job_tenant_kwargs() -> dict:
     }
 
 
+def _guest_allowed(path: str) -> bool:
+    """Pipeline routes a guest may use during the pre-signup free trial."""
+    path = _app_path(path)
+    if path.startswith(
+        (
+            "/campaigns",
+            "/creatives",
+            "/samples",
+            "/gallery",
+            "/fonts/",
+            "/outputs/",
+        )
+    ) or path in {"/gallery", "/samples"}:
+        return True
+    return False
+
+
+class TenantAuthMiddleware(BaseHTTPMiddleware):
+    """Signed-in account, or pre-signup guest trial with host-key caps."""
+
+    async def dispatch(self, request: Request, call_next):
+        path = _app_path(request.url.path)
+        if not hosted_mode() or not _requires_auth(path):
+            return await call_next(request)
+
+        from app.auth_store import get_user_by_id, init_db, load_user_keys
+        from app.trial import ensure_guest_session, trial_status
+
+        init_db()
+        uid = request.session.get("user_id")
+        if uid:
+            user = get_user_by_id(str(uid))
+            if not user:
+                request.session.clear()
+                return JSONResponse({"detail": "Sign in required"}, status_code=401)
+            keys = load_user_keys(user.id)
+            tokens = set_tenant(user_id=user.id, email=user.email, api_keys=keys)
+            try:
+                return await call_next(request)
+            finally:
+                reset_tenant(tokens)
+
+        if _guest_allowed(path):
+            guest_uid = ensure_guest_session(request.session)
+            status = trial_status(guest_uid)
+            tokens = set_tenant(
+                user_id=guest_uid, email="guest@trial.local", api_keys={}
+            )
+            try:
+                request.state.trial = status
+                return await call_next(request)
+            finally:
+                reset_tenant(tokens)
+
+        return JSONResponse(
+            {"detail": "Sign up to continue", "requires_signup": True},
+            status_code=401,
+        )
+
+
+# Innermost → outermost: Tenant needs Session; RootPath strips /pipeline first.
+app.add_middleware(TenantAuthMiddleware)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=secret_key(),
+    session_cookie="herbie_session",
+    same_site="lax",
+    https_only=hosted_mode(),
+    max_age=60 * 60 * 24 * 14,
+    path=_ROOT_PATH or "/",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+if _ROOT_PATH:
+    app.add_middleware(RootPathMiddleware, prefix=_ROOT_PATH)
+
+
 @app.on_event("startup")
 def _startup_hosted() -> None:
     if not hosted_mode():
@@ -150,63 +222,42 @@ def _startup_hosted() -> None:
         )
 
 
-@app.middleware("http")
-async def tenant_auth_middleware(request: Request, call_next):
-    if not hosted_mode() or not _requires_auth(request.url.path):
-        return await call_next(request)
-
-    uid = request.session.get("user_id")
-    if not uid:
-        return JSONResponse({"detail": "Sign in required"}, status_code=401)
-
-    from app.auth_store import get_user_by_id, load_user_keys
-
-    user = get_user_by_id(str(uid))
-    if not user:
-        request.session.clear()
-        return JSONResponse({"detail": "Sign in required"}, status_code=401)
-
-    keys = load_user_keys(user.id)
-    tokens = set_tenant(user_id=user.id, email=user.email, api_keys=keys)
-    try:
-        return await call_next(request)
-    finally:
-        reset_tenant(tokens)
-
-
 @app.get("/health")
 def health(request: Request) -> dict:
     openai_ok = bool(get_openai_api_key())
     xai_ok = bool(get_xai_api_key())
     google_ok = bool(get_google_fonts_api_key())
     trial_info = None
+    auth_required = False
     if hosted_mode():
-        from app.auth_store import load_user_keys
-        from app.trial import trial_status
+        from app.auth_store import init_db, load_user_keys
+        from app.trial import ensure_guest_session, trial_status
 
+        init_db()
         uid = request.session.get("user_id")
         if uid:
             keys = load_user_keys(str(uid))
             trial_info = trial_status(str(uid))
-            openai_ok = bool(keys.get("openai_api_key")) or bool(
-                trial_info.get("openai_ready")
-            )
-            xai_ok = bool(keys.get("xai_api_key")) or bool(
-                trial_info.get("can_use_host_xai")
-            )
+            openai_ok = bool(keys.get("openai_api_key"))
+            xai_ok = bool(keys.get("xai_api_key"))
             google_ok = bool(keys.get("google_fonts_api_key")) or google_ok
+            auth_required = False
         else:
-            openai_ok = False
+            guest_uid = ensure_guest_session(request.session)
+            trial_info = trial_status(guest_uid)
+            openai_ok = bool(trial_info.get("openai_ready"))
             xai_ok = False
+            auth_required = bool(trial_info.get("requires_signup"))
     return {
         "ok": True,
-        "service": "Herbie Creative",
+        "service": "Herbie Creative Campaign Pipeline",
         "hosted": hosted_mode(),
         "desktop_tools": not hosted_mode(),
         "motion_available": xai_ok,
         "openai_configured": openai_ok,
         "google_fonts_catalog": google_ok,
         "trial": trial_info,
+        "auth_required": auth_required,
     }
 
 
@@ -488,15 +539,20 @@ async def create_campaign_endpoint(
 async def parse_campaign_endpoint(
     campaign_id: str, background: BackgroundTasks
 ) -> dict:
+    from app.trial import is_guest_id
+
     try:
         result = parse_campaign(campaign_id)
-        if result.get("product_seeds_pending"):
+        # Guest trial: skip auto product-seed image jobs (extra host-key spend).
+        if result.get("product_seeds_pending") and not is_guest_id(current_user_id()):
             from app.product_seeds import run_product_seeds_job
 
             loop = asyncio.get_running_loop()
             background.add_task(
                 run_product_seeds_job, campaign_id, loop, **_job_tenant_kwargs()
             )
+        elif result.get("product_seeds_pending") and is_guest_id(current_user_id()):
+            result = {**result, "product_seeds_pending": False, "guest_seeds_skipped": True}
         return result
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -578,10 +634,11 @@ async def generate_campaign(
     body: GenerateRequest,
     background: BackgroundTasks,
 ) -> dict:
+    from app.fastapi_intake import load_campaign_brief
     from app.trial import (
+        apply_trial_generate_guards,
         consume_trial_run_if_needed,
         host_openai_key,
-        host_xai_key,
         require_generate_access,
         trial_status,
     )
@@ -591,6 +648,17 @@ async def generate_campaign(
     except ValueError as exc:
         raise HTTPException(status_code=402, detail=str(exc)) from exc
 
+    product_count = 1
+    try:
+        brief = load_campaign_brief(campaign_id)
+        product_count = max(1, len(brief.products or []))
+    except Exception:
+        pass
+
+    body, estimated_stills = apply_trial_generate_guards(
+        body, product_count=product_count
+    )
+
     job_kwargs = _job_tenant_kwargs()
     status = trial_status()
     keys = dict(job_kwargs.get("api_keys") or {})
@@ -599,12 +667,8 @@ async def generate_campaign(
         host_key = host_openai_key()
         if host_key:
             keys["openai_api_key"] = host_key
-        if status.get("can_use_host_xai") and not keys.get("xai_api_key"):
-            xai = host_xai_key()
-            if xai:
-                keys["xai_api_key"] = xai
         job_kwargs["api_keys"] = keys
-    used_trial = consume_trial_run_if_needed()
+    used_trial = consume_trial_run_if_needed(estimated_stills=estimated_stills)
 
     job_id = f"{campaign_id}-job"
     loop = asyncio.get_running_loop()
@@ -614,6 +678,7 @@ async def generate_campaign(
     return {
         "job_id": job_id,
         "trial_run_consumed": used_trial,
+        "trial_stills_budget": estimated_stills,
         "trial": trial_status(),
     }
 
@@ -825,6 +890,12 @@ def create_motion(campaign_id: str, body: MotionRequest) -> dict:
     )
     from app.fastapi_intake import load_campaign_brief
     from app.providers import xai_video
+    from app.trial import require_motion_access
+
+    try:
+        require_motion_access()
+    except ValueError as exc:
+        raise HTTPException(status_code=402, detail=str(exc)) from exc
 
     key = get_xai_api_key()
     if not key:

@@ -319,9 +319,16 @@ export type GalleryResponse = {
 
 export type TrialStatus = {
   enabled?: boolean
+  mode?: 'guest' | 'account' | string
+  requires_signup?: boolean
   limit?: number
   used?: number
   remaining?: number
+  stills_used?: number
+  stills_remaining?: number
+  max_stills_per_run?: number
+  max_total_stills?: number
+  force_quality?: string
   has_own_openai?: boolean
   openai_ready?: boolean
   can_use_host_openai?: boolean
@@ -338,6 +345,7 @@ export async function getHealth() {
     openai_configured?: boolean
     google_fonts_catalog?: boolean
     trial?: TrialStatus | null
+    auth_required?: boolean
   }>
 }
 

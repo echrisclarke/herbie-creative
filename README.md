@@ -1,6 +1,8 @@
-# Herbie Creative
+# Campaign Pipeline
 
-Local proof-of-concept for **creative automation of social ad campaigns**: turn a campaign brief and product assets into multi-ratio stills, then optionally stamp brand-safe message, CTA, and logo on finals.
+**Herbie Creative** brand · campaign automation app.
+
+Local proof-of-concept for creative automation of social ad campaigns: turn a campaign brief and product assets into multi-ratio stills, then optionally stamp brand-safe message, CTA, and logo on finals.
 
 Built for the FDE Take-Home Lite exercise (creative automation for scalable social campaigns). The brief asks you to **run locally** as a **command-line tool or a simple local app**. This repo is the local app (browser UI). The Local CLI / `smoke` path is there too so the bare minimum checklist can run in one pass on the same engine.
 
@@ -86,7 +88,7 @@ python3 run_app.py
 
 That starts the app the same way as Quick start (venv, packages, server, browser). Leave the window open. After clone or ZIP, start with `run_app.py`.
 
-Enter your **OpenAI API key** when the app asks (Settings also works). First-time setup is: Herbie Creative start screen → keys (if needed) → pipeline. No Node.js required: `frontend/dist` is included. Optional React rebuild: [Optional: rebuild UI from source](#optional-rebuild-ui-from-source).
+Enter your **OpenAI API key** when the app asks (Settings also works). First-time setup is: Campaign Pipeline start screen → keys (if needed) → pipeline. No Node.js required: `frontend/dist` is included. Optional React rebuild: [Optional: rebuild UI from source](#optional-rebuild-ui-from-source).
 
 If a previous install failed halfway, delete `backend/.venv` (or `backend\.venv` on Windows) and run `py -3 run_app.py` / `python3 run_app.py` again from inside `herbie-creative`.
 

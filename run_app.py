@@ -553,7 +553,7 @@ def ensure_backend_deps(venv_py: Path) -> None:
         )
         # Prefer wheels so machines without MSVC do not try to compile.
         _run_with_spinner(
-            "installing Herbie Creative packages",
+            "installing Campaign Pipeline packages",
             [
                 str(venv_py),
                 "-m",
@@ -618,7 +618,7 @@ def open_browser_when_ready() -> None:
 
 def main() -> int:
     _setup_logging()
-    _log("Herbie Creative")
+    _log("Herbie Creative Campaign Pipeline")
     if _health_ok():
         _log("App already running. Opening browser…")
         webbrowser.open(LOCAL_URL)

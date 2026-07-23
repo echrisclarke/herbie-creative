@@ -1,4 +1,4 @@
-# Deploy Herbie Creative at herbiecreative.com/pipeline
+# Deploy Herbie Creative Campaign Pipeline at herbiecreative.com/pipeline
 
 Live URL: **https://herbiecreative.com/pipeline**
 
@@ -19,9 +19,14 @@ The FastAPI app runs on Railway under the `/pipeline` path. Bluehost keeps the m
 | `ENCRYPTION_KEY` | long random string |
 | `BOOTSTRAP_ADMIN_EMAIL` | your email (first admin) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | strong password |
-| `OPENAI_API_KEY` | your key for the 3-run free trial |
-| `XAI_API_KEY` | optional trial motion |
-| `TRIAL_RUNS_LIMIT` | `3` |
+| `OPENAI_API_KEY` | your key for the pre-signup free trial |
+| `TRIAL_RUNS_LIMIT` | `3` generate runs before signup |
+| `TRIAL_MAX_STILLS_PER_RUN` | `6` |
+| `TRIAL_MAX_TOTAL_STILLS` | `18` |
+| `TRIAL_FORCE_QUALITY` | `low` |
+| `TRIAL_GLOBAL_DAILY_RUNS` | `100` site-wide cap |
+
+Guests can try before signup (3 generate runs, low quality, still caps, no motion). After signup they must add their own OpenAI key.
 
 3. **Volume** at `/data`.
 4. Confirm the Railway URL works at `https://YOUR-APP.up.railway.app/pipeline/`.

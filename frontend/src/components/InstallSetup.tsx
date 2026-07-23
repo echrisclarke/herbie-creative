@@ -44,6 +44,7 @@ export function InstallSetup({
         <h1 className="name-header page-title header-text-style install-setup-brand">
           HERBIE CREATIVE
         </h1>
+        <p className="install-setup-product">Campaign Pipeline</p>
         <p className="install-setup-lead">
           Add your API keys to run the campaign pipeline. On the live site you also get 3 free
           generate runs before your own OpenAI key is required.

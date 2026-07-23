@@ -14,8 +14,16 @@ function errorMessage(err: unknown): string {
   return raw
 }
 
-export function LoginScreen({ onSignedIn }: { onSignedIn: () => void }) {
-  const [mode, setMode] = useState<Mode>('signin')
+export function LoginScreen({
+  onSignedIn,
+  initialMode = 'signin',
+  trialMessage,
+}: {
+  onSignedIn: () => void
+  initialMode?: Mode
+  trialMessage?: string
+}) {
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -54,10 +62,12 @@ export function LoginScreen({ onSignedIn }: { onSignedIn: () => void }) {
         <h1 className="name-header page-title header-text-style install-setup-brand">
           HERBIE CREATIVE
         </h1>
+        <p className="install-setup-product">Campaign Pipeline</p>
         <p className="install-setup-lead">
-          {mode === 'signup'
-            ? 'Create an account to run campaigns. You get 3 free generate runs, then use your own API keys.'
-            : 'Sign in to run campaigns with your account.'}
+          {trialMessage ||
+            (mode === 'signup'
+              ? 'Create an account, then add your own OpenAI key in Settings to generate creatives.'
+              : 'Sign in to your account.')}
         </p>
 
         <div className="auth-mode-toggle" role="tablist" aria-label="Account">

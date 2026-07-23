@@ -54,6 +54,17 @@ def init_db() -> None:
                 google_fonts_enc TEXT,
                 updated_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS trial_guests (
+                id TEXT PRIMARY KEY,
+                runs_used INTEGER NOT NULL DEFAULT 0,
+                stills_used INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                last_seen_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS trial_daily (
+                day TEXT PRIMARY KEY,
+                runs_used INTEGER NOT NULL DEFAULT 0
+            );
             """
         )
         cols = {
@@ -247,6 +258,68 @@ def update_user_keys(
             ),
         )
     return current
+
+
+def create_guest_trial(guest_id: str) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO trial_guests (id, runs_used, stills_used, created_at, last_seen_at)
+            VALUES (?, 0, 0, ?, ?)
+            """,
+            (guest_id, now, now),
+        )
+
+
+def get_guest_trial(guest_id: str) -> sqlite3.Row | None:
+    with _connect() as conn:
+        return conn.execute(
+            "SELECT * FROM trial_guests WHERE id = ?",
+            (guest_id,),
+        ).fetchone()
+
+
+def increment_guest_trial(guest_id: str, *, stills: int = 0) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.execute(
+            """
+            UPDATE trial_guests
+            SET runs_used = COALESCE(runs_used, 0) + 1,
+                stills_used = COALESCE(stills_used, 0) + ?,
+                last_seen_at = ?
+            WHERE id = ?
+            """,
+            (max(0, stills), now, guest_id),
+        )
+
+
+def today_global_trial_runs() -> int:
+    day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT runs_used FROM trial_daily WHERE day = ?",
+            (day,),
+        ).fetchone()
+    if not row:
+        return 0
+    try:
+        return max(0, int(row["runs_used"] or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def increment_global_trial_run() -> None:
+    day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    with _connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO trial_daily (day, runs_used) VALUES (?, 1)
+            ON CONFLICT(day) DO UPDATE SET runs_used = runs_used + 1
+            """,
+            (day,),
+        )
 
 
 def get_trial_runs_used(user_id: str) -> int:

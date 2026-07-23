@@ -90,11 +90,11 @@ def resolve_openai_key() -> str | None:
     if stored:
         return stored
     if hosted_mode():
-        # Limited free trial on the host OPENAI_API_KEY, then users must add their own.
-        from app.trial import host_openai_key, trial_status
+        # Guest free trial only (pre-signup). Signed-in accounts use their own keys.
+        from app.trial import host_openai_key, is_guest_id, trial_status
+        from app.tenant import current_user_id
 
-        status = trial_status()
-        if status.get("can_use_host_openai"):
+        if is_guest_id(current_user_id()) and trial_status().get("can_use_host_openai"):
             return host_openai_key()
         return None
     return (os.getenv("OPENAI_API_KEY") or None) or None
@@ -105,11 +105,6 @@ def resolve_xai_key() -> str | None:
     if stored:
         return stored
     if hosted_mode():
-        from app.trial import host_xai_key, trial_status
-
-        status = trial_status()
-        if status.get("can_use_host_xai"):
-            return host_xai_key()
         return None
     return (os.getenv("XAI_API_KEY") or None) or None
 
@@ -153,14 +148,12 @@ def settings_snapshot(*, reveal: bool = False) -> dict[str, Any]:
         )
         if get_stored_openai_key():
             openai_source = "settings"
-        elif trial.get("can_use_host_openai"):
+        elif trial and trial.get("can_use_host_openai"):
             openai_source = "trial"
         else:
             openai_source = None
         if get_stored_xai_key():
             xai_source = "settings"
-        elif trial.get("can_use_host_xai"):
-            xai_source = "trial"
         else:
             xai_source = None
         google_source = (
