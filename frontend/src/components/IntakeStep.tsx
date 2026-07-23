@@ -13,9 +13,11 @@ type BriefInputMode = 'paste' | 'upload'
 export function IntakeStep({
   onNext,
   onLoadSample,
+  desktopTools = true,
 }: {
   onNext: (briefText: string, files: File[], roles: string[]) => Promise<void>
   onLoadSample: (sampleId: string) => Promise<void>
+  desktopTools?: boolean
 }) {
   const [text, setText] = useState('')
   const [extraNotes, setExtraNotes] = useState('')
@@ -56,38 +58,40 @@ export function IntakeStep({
     <section className="panel step-panel" style={{ padding: '1.5rem' }}>
       <h2 style={{ marginTop: 0 }}>Intake</h2>
 
-      <div className="cli-sample-banner">
-        <div className="cli-sample-banner-copy">
-          <strong>Local CLI</strong>
-          <p>
-            Same brief as <em>Jordan hero zoom</em> below · Frozen Moments +
-            Shattered Backboard · 1:1 / 9:16 / 16:9 · en / es / zh · legal
-          </p>
-          <p className="cli-sample-disclaimer">
-            Unofficial test sample. Not a real Jordan / Nike advertisement.
-          </p>
+      {desktopTools && (
+        <div className="cli-sample-banner">
+          <div className="cli-sample-banner-copy">
+            <strong>Local CLI</strong>
+            <p>
+              Same brief as <em>Jordan hero zoom</em> below · Frozen Moments +
+              Shattered Backboard · 1:1 / 9:16 / 16:9 · en / es / zh · legal
+            </p>
+            <p className="cli-sample-disclaimer">
+              Unofficial test sample. Not a real Jordan / Nike advertisement.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn cli-sample-btn"
+            disabled={anyBusy}
+            onClick={async () => {
+              setAssignmentBusy(true)
+              setError(null)
+              setAssignmentMsg(null)
+              try {
+                const result = await runAssignmentCli()
+                setAssignmentMsg(result.message || 'Opened a terminal for the local CLI run.')
+              } catch (err) {
+                setError(err instanceof Error ? err.message : String(err))
+              } finally {
+                setAssignmentBusy(false)
+              }
+            }}
+          >
+            {assignmentBusy ? 'Opening…' : 'Run local CLI'}
+          </button>
         </div>
-        <button
-          type="button"
-          className="btn cli-sample-btn"
-          disabled={anyBusy}
-          onClick={async () => {
-            setAssignmentBusy(true)
-            setError(null)
-            setAssignmentMsg(null)
-            try {
-              const result = await runAssignmentCli()
-              setAssignmentMsg(result.message || 'Opened a terminal for the local CLI run.')
-            } catch (err) {
-              setError(err instanceof Error ? err.message : String(err))
-            } finally {
-              setAssignmentBusy(false)
-            }
-          }}
-        >
-          {assignmentBusy ? 'Opening…' : 'Run local CLI'}
-        </button>
-      </div>
+      )}
       {assignmentMsg && <div className="banner">{assignmentMsg}</div>}
 
       {samples.length > 0 && (

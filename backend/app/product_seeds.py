@@ -177,7 +177,23 @@ def _load_image_bytes(paths: list[str], *, limit: int = 2) -> list[bytes]:
     return out
 
 
-def run_product_seeds_job(campaign_id: str, loop: asyncio.AbstractEventLoop) -> None:
+def run_product_seeds_job(
+    campaign_id: str,
+    loop: asyncio.AbstractEventLoop,
+    *,
+    user_id: str | None = None,
+    user_email: str | None = None,
+    api_keys: dict[str, str] | None = None,
+) -> None:
+    from app.tenant import tenant_context
+
+    with tenant_context(user_id=user_id, email=user_email, api_keys=api_keys):
+        _run_product_seeds_job_inner(campaign_id, loop)
+
+
+def _run_product_seeds_job_inner(
+    campaign_id: str, loop: asyncio.AbstractEventLoop
+) -> None:
     from app.fastapi_intake import load_campaign_brief, save_campaign_brief
     from app.providers.openai_editor import OpenAIImageEditor
 

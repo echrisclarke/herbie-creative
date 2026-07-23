@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import hashlib
 import os
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -19,6 +21,61 @@ load_dotenv(BACKEND_ROOT / ".env")
 _private = PROJECT_ROOT.parent / "private" / ".env"
 if _private.exists():
     load_dotenv(_private, override=False)
+
+
+def hosted_mode() -> bool:
+    """Railway/production: login required, per-user keys and campaigns."""
+    return os.getenv("HOSTED", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def data_root() -> Path:
+    """Persistent volume root (SQLite + campaigns). Defaults beside the project."""
+    raw = (os.getenv("DATA_ROOT") or "").strip()
+    if raw:
+        root = Path(raw)
+    elif hosted_mode():
+        root = Path("/data")
+    else:
+        root = PROJECT_ROOT
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def secret_key() -> str:
+    value = (os.getenv("SECRET_KEY") or "").strip()
+    if value:
+        return value
+    if hosted_mode():
+        # Stable-enough fallback for first boot; set SECRET_KEY in Railway.
+        return hashlib.sha256(b"herbie-creative-hosted-dev").hexdigest()
+    return "local-dev-secret"
+
+
+def encryption_key_bytes() -> bytes:
+    """Fernet key for per-user API key ciphertext."""
+    raw = (os.getenv("ENCRYPTION_KEY") or "").strip()
+    if raw:
+        try:
+            # Accept a url-safe base64 Fernet key, or derive from any passphrase.
+            if len(raw) == 44:
+                return raw.encode("ascii")
+            digest = hashlib.sha256(raw.encode("utf-8")).digest()
+            return base64.urlsafe_b64encode(digest)
+        except Exception:
+            pass
+    seed = (os.getenv("SECRET_KEY") or "herbie-creative-local").encode("utf-8")
+    return base64.urlsafe_b64encode(hashlib.sha256(seed).digest())
+
+
+def campaigns_base() -> Path:
+    """Unscoped campaigns directory (parent of per-user folders when hosted)."""
+    env = (os.getenv("CAMPAIGNS_ROOT") or "").strip()
+    if env:
+        root = Path(env)
+    else:
+        root = data_root() / "campaigns"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
 
 
 def get_openai_api_key() -> str | None:
@@ -188,13 +245,23 @@ def motion_duration_default() -> int:
 
 
 def campaigns_root() -> Path:
-    root = Path(os.getenv("CAMPAIGNS_ROOT", str(PROJECT_ROOT / "campaigns")))
+    """Campaign files for the current tenant (or shared local root)."""
+    base = campaigns_base()
+    if hosted_mode():
+        from app.tenant import current_user_id
+
+        uid = current_user_id()
+        if uid:
+            root = base / uid
+            root.mkdir(parents=True, exist_ok=True)
+            return root
+    root = base
     root.mkdir(parents=True, exist_ok=True)
     return root
 
 
 def font_cache_root() -> Path:
-    root = campaigns_root() / "_font_cache"
+    root = campaigns_base() / "_font_cache"
     root.mkdir(parents=True, exist_ok=True)
     return root
 

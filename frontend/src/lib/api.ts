@@ -185,6 +185,56 @@ export type FinalizeChoices = {
 
 const API = import.meta.env.DEV ? '/api' : ''
 
+function apiFetch(input: string, init?: RequestInit) {
+  return fetch(input, { ...init, credentials: 'include' })
+}
+
+export type AuthUser = {
+  id: string
+  email: string
+  is_admin: boolean
+}
+
+export async function fetchAuthMe() {
+  const res = await apiFetch(`${API}/auth/me`)
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<{ hosted: boolean; user: AuthUser | null }>
+}
+
+export async function login(email: string, password: string) {
+  const res = await apiFetch(`${API}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<{
+    ok: boolean
+    hosted: boolean
+    user: AuthUser | null
+  }>
+}
+
+export async function logout() {
+  const res = await apiFetch(`${API}/auth/logout`, { method: 'POST' })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<{ ok: boolean }>
+}
+
+export async function createInvitedUser(body: {
+  email: string
+  password: string
+  is_admin?: boolean
+}) {
+  const res = await apiFetch(`${API}/auth/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<{ ok: boolean; user: AuthUser }>
+}
+
 export type KeyStatus = {
   configured: boolean
   source: string | null
@@ -235,10 +285,12 @@ export type GalleryResponse = {
 }
 
 export async function getHealth() {
-  const res = await fetch(`${API}/health`)
+  const res = await apiFetch(`${API}/health`)
   return res.json() as Promise<{
     ok: boolean
     service?: string
+    hosted?: boolean
+    desktop_tools?: boolean
     motion_available: boolean
     openai_configured?: boolean
     google_fonts_catalog?: boolean
@@ -246,7 +298,7 @@ export async function getHealth() {
 }
 
 export async function fetchSettingsKeys(reveal = false) {
-  const res = await fetch(`${API}/settings/keys?reveal=${reveal ? 'true' : 'false'}`)
+  const res = await apiFetch(`${API}/settings/keys?reveal=${reveal ? 'true' : 'false'}`)
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<SettingsKeys>
 }
@@ -256,7 +308,7 @@ export async function saveSettingsKeys(body: {
   xai_api_key?: string
   google_fonts_api_key?: string
 }) {
-  const res = await fetch(`${API}/settings/keys`, {
+  const res = await apiFetch(`${API}/settings/keys`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -272,7 +324,7 @@ export async function clearApiKey(which: 'openai' | 'xai' | 'google_fonts') {
       : which === 'xai'
         ? { clear_xai: true }
         : { clear_google_fonts: true }
-  const res = await fetch(`${API}/settings/keys`, {
+  const res = await apiFetch(`${API}/settings/keys`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -293,7 +345,7 @@ export async function fetchGallery(params?: {
   if (params?.brand) q.set('brand', params.brand)
   if (params?.kind) q.set('kind', params.kind)
   const qs = q.toString()
-  const res = await fetch(`${API}/gallery${qs ? `?${qs}` : ''}`)
+  const res = await apiFetch(`${API}/gallery${qs ? `?${qs}` : ''}`)
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<GalleryResponse>
 }
@@ -326,25 +378,25 @@ export type OpenCampaignResult = {
 }
 
 export async function listPastCampaigns() {
-  const res = await fetch(`${API}/campaigns`)
+  const res = await apiFetch(`${API}/campaigns`)
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{ campaigns: PastCampaign[] }>
 }
 
 export async function openPastCampaign(campaignId: string) {
-  const res = await fetch(`${API}/campaigns/${campaignId}/open`)
+  const res = await apiFetch(`${API}/campaigns/${campaignId}/open`)
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<OpenCampaignResult>
 }
 
 export async function saveDraft(campaignId: string) {
-  const res = await fetch(`${API}/campaigns/${campaignId}/draft`, { method: 'POST' })
+  const res = await apiFetch(`${API}/campaigns/${campaignId}/draft`, { method: 'POST' })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{ ok: boolean; campaign_id: string; status: string }>
 }
 
 export async function deleteCampaign(campaignId: string) {
-  const res = await fetch(`${API}/campaigns/${encodeURIComponent(campaignId)}`, {
+  const res = await apiFetch(`${API}/campaigns/${encodeURIComponent(campaignId)}`, {
     method: 'DELETE',
   })
   if (!res.ok) throw new Error(await res.text())
@@ -354,7 +406,7 @@ export async function deleteCampaign(campaignId: string) {
 export async function deleteCreatives(
   items: Array<{ campaign_id: string; path: string }>,
 ) {
-  const res = await fetch(`${API}/creatives/delete`, {
+  const res = await apiFetch(`${API}/creatives/delete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
@@ -372,14 +424,14 @@ export async function revealCampaignFolder(campaignId?: string | null) {
   const path = campaignId
     ? `${API}/campaigns/${encodeURIComponent(campaignId)}/reveal`
     : `${API}/campaigns/reveal-root`
-  const res = await fetch(path, { method: 'POST' })
+  const res = await apiFetch(path, { method: 'POST' })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{ ok: boolean; path: string }>
 }
 
 export async function cleanupEphemeral(campaignId: string | null) {
   if (!campaignId) return { ok: true, deleted: false }
-  const res = await fetch(`${API}/campaigns/cleanup-ephemeral`, {
+  const res = await apiFetch(`${API}/campaigns/cleanup-ephemeral`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ campaign_id: campaignId }),
@@ -389,13 +441,13 @@ export async function cleanupEphemeral(campaignId: string | null) {
 }
 
 export async function listSamples() {
-  const res = await fetch(`${API}/samples`)
+  const res = await apiFetch(`${API}/samples`)
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{ samples: SampleInfo[] }>
 }
 
 export async function runAssignmentCli() {
-  const res = await fetch(`${API}/tools/run-assignment-cli`, { method: 'POST' })
+  const res = await apiFetch(`${API}/tools/run-assignment-cli`, { method: 'POST' })
   const body = await res.json().catch(() => ({} as Record<string, unknown>))
   if (!res.ok) {
     const detail = body?.detail
@@ -421,7 +473,7 @@ export async function runAssignmentCli() {
 }
 
 export async function createFromSample(sampleId: string) {
-  const res = await fetch(`${API}/campaigns/from-sample/${sampleId}`, { method: 'POST' })
+  const res = await apiFetch(`${API}/campaigns/from-sample/${sampleId}`, { method: 'POST' })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{
     campaign_id: string
@@ -441,13 +493,13 @@ export async function createCampaign(
   if (briefText) form.append('brief_text', briefText)
   for (const f of files) form.append('files', f)
   for (const role of roles) form.append('roles', role)
-  const res = await fetch(`${API}/campaigns`, { method: 'POST', body: form })
+  const res = await apiFetch(`${API}/campaigns`, { method: 'POST', body: form })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{ campaign_id: string }>
 }
 
 export async function parseCampaign(id: string) {
-  const res = await fetch(`${API}/campaigns/${id}/parse`, { method: 'POST' })
+  const res = await apiFetch(`${API}/campaigns/${id}/parse`, { method: 'POST' })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{
     brief: Brief
@@ -472,13 +524,13 @@ export type ProductSeedsStatus = {
 }
 
 export async function getProductSeeds(id: string) {
-  const res = await fetch(`${API}/campaigns/${id}/product-seeds`)
+  const res = await apiFetch(`${API}/campaigns/${id}/product-seeds`)
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<ProductSeedsStatus>
 }
 
 export async function retryProductSeeds(id: string) {
-  const res = await fetch(`${API}/campaigns/${id}/product-seeds/retry`, {
+  const res = await apiFetch(`${API}/campaigns/${id}/product-seeds/retry`, {
     method: 'POST',
   })
   if (!res.ok) throw new Error(await res.text())
@@ -486,7 +538,7 @@ export async function retryProductSeeds(id: string) {
 }
 
 export async function saveCampaign(id: string, brief: Brief) {
-  const res = await fetch(`${API}/campaigns/${id}`, {
+  const res = await apiFetch(`${API}/campaigns/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(brief),
@@ -496,7 +548,7 @@ export async function saveCampaign(id: string, brief: Brief) {
 }
 
 export async function approveCampaign(id: string, brief: Brief) {
-  const res = await fetch(`${API}/campaigns/${id}/approve`, {
+  const res = await apiFetch(`${API}/campaigns/${id}/approve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(brief),
@@ -509,7 +561,7 @@ export async function uploadAssets(id: string, files: File[], roles: string[] = 
   const form = new FormData()
   for (const f of files) form.append('files', f)
   for (const role of roles) form.append('roles', role)
-  const res = await fetch(`${API}/campaigns/${id}/assets`, { method: 'POST', body: form })
+  const res = await apiFetch(`${API}/campaigns/${id}/assets`, { method: 'POST', body: form })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{
     saved: string[]
@@ -534,7 +586,7 @@ export async function generateCampaign(
     source_paths?: string[]
   },
 ) {
-  const res = await fetch(`${API}/campaigns/${id}/generate`, {
+  const res = await apiFetch(`${API}/campaigns/${id}/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -565,7 +617,7 @@ export async function generateMotion(
   const stem = (lower.split('/').pop() || 'creative').replace(/\.(png|jpg|jpeg|webp)$/i, '')
   // Unique mp4 beside the still (creative.png → creative.mp4, final.en.png → final.en.mp4).
   const outputName = `${stem || 'creative'}.mp4`
-  const res = await fetch(`${API}/campaigns/${id}/motion`, {
+  const res = await apiFetch(`${API}/campaigns/${id}/motion`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -593,13 +645,13 @@ export async function generateMotion(
 }
 
 export async function suggestFinalize(id: string) {
-  const res = await fetch(`${API}/campaigns/${id}/suggest-finalize`, { method: 'POST' })
+  const res = await apiFetch(`${API}/campaigns/${id}/suggest-finalize`, { method: 'POST' })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{ ok: boolean; suggest: FinalizeSuggest }>
 }
 
 export async function applyFinalize(id: string, choices: FinalizeChoices) {
-  const res = await fetch(`${API}/campaigns/${id}/finalize`, {
+  const res = await apiFetch(`${API}/campaigns/${id}/finalize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(choices),
@@ -619,7 +671,7 @@ export async function adaptLocalizeCopy(
     existing?: Record<string, { message: string; cta: string; supporting?: string }>
   },
 ) {
-  const res = await fetch(`${API}/campaigns/${id}/localize-copy`, {
+  const res = await apiFetch(`${API}/campaigns/${id}/localize-copy`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -639,19 +691,19 @@ export async function adaptLocalizeCopy(
 }
 
 export async function suggestCopy(id: string) {
-  const res = await fetch(`${API}/campaigns/${id}/suggest-copy`, { method: 'POST' })
+  const res = await apiFetch(`${API}/campaigns/${id}/suggest-copy`, { method: 'POST' })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<{ ok: boolean; brief: Brief; draft: Record<string, string> }>
 }
 
 export async function fetchReport(id: string) {
-  const res = await fetch(`${API}/campaigns/${id}/report.json`)
+  const res = await apiFetch(`${API}/campaigns/${id}/report.json`)
   if (!res.ok) throw new Error('Report not ready')
   return res.json() as Promise<Report>
 }
 
 export async function searchFonts(query: string) {
-  const res = await fetch(`${API}/fonts/google?query=${encodeURIComponent(query)}`)
+  const res = await apiFetch(`${API}/fonts/google?query=${encodeURIComponent(query)}`)
   if (!res.ok) return { fonts: [] as string[] }
   return res.json() as Promise<{ fonts: string[] }>
 }

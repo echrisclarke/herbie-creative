@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from app.config import PROJECT_ROOT, campaigns_root
+from app.config import PROJECT_ROOT, campaigns_base, campaigns_root
 
 _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
 _MEDIA_EXTS = _IMAGE_EXTS | {".mp4"}
@@ -25,18 +25,25 @@ def _norm_ratio(raw: str) -> str:
 
 
 def _rel_url(path: Path) -> str | None:
+    # Public URLs are rooted at campaigns_base so hosted /outputs/{user}/{campaign}/… works.
+    try:
+        rel = path.resolve().relative_to(campaigns_base().resolve())
+        return f"/outputs/{rel.as_posix()}"
+    except ValueError:
+        pass
     try:
         rel = path.resolve().relative_to(campaigns_root().resolve())
+        return f"/outputs/{rel.as_posix()}"
     except ValueError:
-        try:
-            rel = path.resolve().relative_to(PROJECT_ROOT.resolve())
-            text = rel.as_posix()
-            if text.startswith("campaigns/"):
-                text = text[len("campaigns/") :]
-            return f"/outputs/{text}"
-        except ValueError:
-            return None
-    return f"/outputs/{rel.as_posix()}"
+        pass
+    try:
+        rel = path.resolve().relative_to(PROJECT_ROOT.resolve())
+        text = rel.as_posix()
+        if text.startswith("campaigns/"):
+            text = text[len("campaigns/") :]
+        return f"/outputs/{text}"
+    except ValueError:
+        return None
 
 
 def _campaign_title(campaign_id: str, root: Path) -> str:

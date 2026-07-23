@@ -69,8 +69,10 @@ type LibraryView = 'campaigns' | 'gallery'
 
 export function SamplesGallery({
   onOpenCampaign,
+  desktopTools = true,
 }: {
   onOpenCampaign?: (campaignId: string) => void | Promise<void>
+  desktopTools?: boolean
 }) {
   const [view, setView] = useState<LibraryView>('gallery')
   const [data, setData] = useState<GalleryResponse | null>(null)
@@ -384,13 +386,15 @@ export function SamplesGallery({
               <button type="button" className="btn-ghost" onClick={() => void refreshPast()}>
                 Refresh
               </button>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => void handleReveal(null)}
-              >
-                Open local folder
-              </button>
+              {desktopTools && (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => void handleReveal(null)}
+                >
+                  Open local folder
+                </button>
+              )}
             </div>
           </div>
           {past.length === 0 ? (
@@ -430,13 +434,15 @@ export function SamplesGallery({
                     >
                       {openingId === c.id ? 'Opening…' : 'Open'}
                     </button>
-                    <button
-                      type="button"
-                      className="btn-ghost"
-                      onClick={() => void handleReveal(c.id)}
-                    >
-                      Folder
-                    </button>
+                    {desktopTools && (
+                      <button
+                        type="button"
+                        className="btn-ghost"
+                        onClick={() => void handleReveal(c.id)}
+                      >
+                        Folder
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="btn-ghost"

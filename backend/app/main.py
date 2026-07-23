@@ -5,13 +5,22 @@ import json
 import logging
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
+from starlette.middleware.sessions import SessionMiddleware
 
-from app.config import PROJECT_ROOT, campaigns_root, get_google_fonts_api_key, get_openai_api_key, get_xai_api_key
+from app.config import (
+    PROJECT_ROOT,
+    campaigns_base,
+    get_google_fonts_api_key,
+    get_openai_api_key,
+    get_xai_api_key,
+    hosted_mode,
+    secret_key,
+)
 from app.fastapi_fonts import list_google_fonts
 from app.fastapi_intake import (
     approve_campaign,
@@ -34,12 +43,23 @@ from app.campaign_browser import (
 from app.schemas import Brief, FinalizeChoices, GenerateRequest, LocalizeCopyRequest, MotionRequest
 from app.sse import bus
 from app.storage.paths import campaign_dir
+from app.tenant import current_api_keys, current_user_email, current_user_id, reset_tenant, set_tenant
 from app.user_secrets import settings_snapshot, update_keys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("api")
 
 app = FastAPI(title="Herbie Creative", version="0.1.0")
+
+# Session must be outermost so request.session is available in auth middleware.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=secret_key(),
+    session_cookie="herbie_session",
+    same_site="lax",
+    https_only=hosted_mode(),
+    max_age=60 * 60 * 24 * 14,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,7 +68,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-outputs_root = campaigns_root()
+outputs_root = campaigns_base()
 outputs_root.mkdir(parents=True, exist_ok=True)
 app.mount("/outputs", StaticFiles(directory=str(outputs_root)), name="outputs")
 
@@ -62,15 +82,190 @@ if _sample_assets.is_dir():
         name="sample-assets",
     )
 
+_PUBLIC_PREFIXES = (
+    "/assets/",
+    "/brand/",
+    "/sample-assets/",
+    "/docs",
+    "/openapi.json",
+    "/redoc",
+)
+
+
+def _requires_auth(path: str) -> bool:
+    if path in {"/health", "/auth/login", "/auth/me", "/favicon.ico"}:
+        return False
+    if path.startswith(_PUBLIC_PREFIXES):
+        return False
+    protected_prefixes = (
+        "/settings/",
+        "/gallery",
+        "/campaigns",
+        "/creatives",
+        "/samples",
+        "/tools/",
+        "/fonts/",
+        "/events",
+        "/outputs/",
+        "/auth/logout",
+        "/auth/users",
+    )
+    if path.startswith(protected_prefixes) or path in {
+        "/gallery",
+        "/samples",
+        "/auth/logout",
+    }:
+        return True
+    return False
+
+
+def _job_tenant_kwargs() -> dict:
+    return {
+        "user_id": current_user_id(),
+        "user_email": current_user_email(),
+        "api_keys": current_api_keys(),
+    }
+
+
+@app.on_event("startup")
+def _startup_hosted() -> None:
+    if not hosted_mode():
+        return
+    from app.auth_store import bootstrap_admin_from_env, init_db
+
+    init_db()
+    created = bootstrap_admin_from_env()
+    if created:
+        logger.info("Bootstrap admin created: %s", created.get("email"))
+    else:
+        logger.info(
+            "Hosted mode ready (set BOOTSTRAP_ADMIN_EMAIL/PASSWORD to create the first admin)"
+        )
+
+
+@app.middleware("http")
+async def tenant_auth_middleware(request: Request, call_next):
+    if not hosted_mode() or not _requires_auth(request.url.path):
+        return await call_next(request)
+
+    uid = request.session.get("user_id")
+    if not uid:
+        return JSONResponse({"detail": "Sign in required"}, status_code=401)
+
+    from app.auth_store import get_user_by_id, load_user_keys
+
+    user = get_user_by_id(str(uid))
+    if not user:
+        request.session.clear()
+        return JSONResponse({"detail": "Sign in required"}, status_code=401)
+
+    keys = load_user_keys(user.id)
+    tokens = set_tenant(user_id=user.id, email=user.email, api_keys=keys)
+    try:
+        return await call_next(request)
+    finally:
+        reset_tenant(tokens)
+
 
 @app.get("/health")
-def health() -> dict:
+def health(request: Request) -> dict:
+    openai_ok = bool(get_openai_api_key())
+    xai_ok = bool(get_xai_api_key())
+    google_ok = bool(get_google_fonts_api_key())
+    if hosted_mode():
+        # /health is public; load the signed-in user's keys when a session exists.
+        uid = request.session.get("user_id")
+        if uid:
+            from app.auth_store import load_user_keys
+
+            keys = load_user_keys(str(uid))
+            openai_ok = bool(keys.get("openai_api_key"))
+            xai_ok = bool(keys.get("xai_api_key"))
+            google_ok = bool(keys.get("google_fonts_api_key")) or google_ok
+        else:
+            openai_ok = False
+            xai_ok = False
     return {
         "ok": True,
         "service": "Herbie Creative",
-        "motion_available": bool(get_xai_api_key()),
-        "openai_configured": bool(get_openai_api_key()),
-        "google_fonts_catalog": bool(get_google_fonts_api_key()),
+        "hosted": hosted_mode(),
+        "desktop_tools": not hosted_mode(),
+        "motion_available": xai_ok,
+        "openai_configured": openai_ok,
+        "google_fonts_catalog": google_ok,
+    }
+
+
+@app.post("/auth/login")
+async def auth_login(request: Request, body: dict) -> dict:
+    from app.auth_store import authenticate, init_db
+
+    if not hosted_mode():
+        return {"ok": True, "hosted": False, "user": None}
+    init_db()
+    email = str(body.get("email") or "").strip()
+    password = str(body.get("password") or "")
+    user = authenticate(email, password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    request.session["user_id"] = user.id
+    request.session["email"] = user.email
+    return {
+        "ok": True,
+        "hosted": True,
+        "user": {"id": user.id, "email": user.email, "is_admin": user.is_admin},
+    }
+
+
+@app.post("/auth/logout")
+async def auth_logout(request: Request) -> dict:
+    request.session.clear()
+    return {"ok": True}
+
+
+@app.get("/auth/me")
+async def auth_me(request: Request) -> dict:
+    if not hosted_mode():
+        return {"hosted": False, "user": None}
+    from app.auth_store import get_user_by_id, init_db
+
+    init_db()
+    uid = request.session.get("user_id")
+    if not uid:
+        return {"hosted": True, "user": None}
+    user = get_user_by_id(str(uid))
+    if not user:
+        request.session.clear()
+        return {"hosted": True, "user": None}
+    return {
+        "hosted": True,
+        "user": {"id": user.id, "email": user.email, "is_admin": user.is_admin},
+    }
+
+
+@app.post("/auth/users")
+async def auth_create_user(request: Request, body: dict) -> dict:
+    """Invite-only: admins create accounts for others."""
+    from app.auth_store import create_user, get_user_by_id, init_db
+
+    if not hosted_mode():
+        raise HTTPException(status_code=400, detail="Only available in hosted mode")
+    init_db()
+    uid = request.session.get("user_id")
+    admin = get_user_by_id(str(uid)) if uid else None
+    if not admin or not admin.is_admin:
+        raise HTTPException(status_code=403, detail="Admin only")
+    try:
+        user = create_user(
+            str(body.get("email") or ""),
+            str(body.get("password") or ""),
+            is_admin=bool(body.get("is_admin")),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "ok": True,
+        "user": {"id": user.id, "email": user.email, "is_admin": user.is_admin},
     }
 
 
@@ -90,10 +285,12 @@ def put_settings_keys(body: dict) -> dict:
             clear_xai=bool(body.get("clear_xai")),
             clear_google_fonts=bool(body.get("clear_google_fonts")),
         )
+    except PermissionError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
     except OSError as exc:
         raise HTTPException(
             status_code=500,
-            detail=f"Could not write local key file: {exc}",
+            detail=f"Could not write key storage: {exc}",
         ) from exc
 
 
@@ -134,6 +331,8 @@ def save_draft_endpoint(campaign_id: str) -> dict:
 
 @app.post("/campaigns/reveal-root")
 def reveal_campaigns_root_endpoint() -> dict:
+    if hosted_mode():
+        raise HTTPException(status_code=404, detail="Not available in hosted mode")
     try:
         return reveal_campaign_folder(None)
     except FileNotFoundError as exc:
@@ -158,6 +357,8 @@ def delete_campaign_endpoint(campaign_id: str) -> dict:
 
 @app.post("/campaigns/{campaign_id}/reveal")
 def reveal_campaign_endpoint(campaign_id: str) -> dict:
+    if hosted_mode():
+        raise HTTPException(status_code=404, detail="Not available in hosted mode")
     try:
         return reveal_campaign_folder(campaign_id)
     except FileNotFoundError as exc:
@@ -210,6 +411,8 @@ def list_samples() -> dict:
 @app.post("/tools/run-assignment-cli")
 def run_assignment_cli() -> dict:
     """Spawns a real OS terminal running the CLI smoke (not in-browser)."""
+    if hosted_mode():
+        raise HTTPException(status_code=404, detail="Not available in hosted mode")
     from app.assignment_launch import launch_assignment_terminal
 
     result = launch_assignment_terminal()
@@ -254,7 +457,9 @@ async def parse_campaign_endpoint(
             from app.product_seeds import run_product_seeds_job
 
             loop = asyncio.get_running_loop()
-            background.add_task(run_product_seeds_job, campaign_id, loop)
+            background.add_task(
+                run_product_seeds_job, campaign_id, loop, **_job_tenant_kwargs()
+            )
         return result
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -286,7 +491,9 @@ async def retry_product_seeds(
         seeds = init_product_seeds_status(campaign_id, brief)
         if seeds.get("status") == "pending":
             loop = asyncio.get_running_loop()
-            background.add_task(run_product_seeds_job, campaign_id, loop)
+            background.add_task(
+                run_product_seeds_job, campaign_id, loop, **_job_tenant_kwargs()
+            )
         return seeds
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -336,7 +543,9 @@ async def generate_campaign(
 ) -> dict:
     job_id = f"{campaign_id}-job"
     loop = asyncio.get_running_loop()
-    background.add_task(run_generate_job, campaign_id, body, loop)
+    background.add_task(
+        run_generate_job, campaign_id, body, loop, **_job_tenant_kwargs()
+    )
     return {"job_id": job_id}
 
 

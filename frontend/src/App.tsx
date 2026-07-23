@@ -15,21 +15,25 @@ import {
   markLandingSeen,
 } from './components/LandingHero'
 import { InstallSetup } from './components/InstallSetup'
+import { LoginScreen } from './components/LoginScreen'
 import {
   approveCampaign,
   cleanupEphemeral,
   createCampaign,
   createFromSample,
+  fetchAuthMe,
   fetchReport,
   generateCampaign,
   generateMotion,
   getHealth,
+  logout,
   openPastCampaign,
   parseCampaign,
   saveCampaign,
   subscribeEvents,
   uploadAssets,
   type AssetManifest,
+  type AuthUser,
   type Brief,
   type CreativeResult,
   type ImageQuality,
@@ -76,6 +80,10 @@ export default function App() {
   const [showInstall, setShowInstall] = useState(false)
   const [installSkipped, setInstallSkipped] = useState(false)
   const [healthReady, setHealthReady] = useState(false)
+  const [hosted, setHosted] = useState(false)
+  const [desktopTools, setDesktopTools] = useState(true)
+  const [authReady, setAuthReady] = useState(false)
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [tab, setTab] = useState<AppTab>('pipeline')
   const [step, setStep] = useState(0)
   /** Highest step unlocked this run. Going back must not lock Finalize/Motion/Results. */
@@ -111,6 +119,8 @@ export default function App() {
       .then((h) => {
         setMotionAvailable(Boolean(h.motion_available))
         setOpenaiConfigured(h.openai_configured !== false)
+        setHosted(Boolean(h.hosted))
+        setDesktopTools(h.desktop_tools !== false)
         setHealthReady(true)
       })
       .catch(() => {
@@ -120,15 +130,30 @@ export default function App() {
       })
   }
 
+  function refreshAuth() {
+    fetchAuthMe()
+      .then((me) => {
+        setHosted(Boolean(me.hosted))
+        setAuthUser(me.user)
+        setAuthReady(true)
+      })
+      .catch(() => {
+        setAuthUser(null)
+        setAuthReady(true)
+      })
+  }
+
   useEffect(() => {
     refreshHealth()
+    refreshAuth()
   }, [])
 
   useEffect(() => {
     // After landing: block the wizard until a key is saved or the user skips setup.
     if (!healthReady || showLanding || installSkipped || openaiConfigured) return
+    if (hosted && !authUser) return
     setShowInstall(true)
-  }, [healthReady, showLanding, installSkipped, openaiConfigured])
+  }, [healthReady, showLanding, installSkipped, openaiConfigured, hosted, authUser])
 
   function finishInstallGate() {
     setInstallSkipped(true)
@@ -748,6 +773,25 @@ export default function App() {
       }`
     : null
 
+  if (!authReady || !healthReady) {
+    return (
+      <div className="app-shell" style={{ padding: '2rem' }}>
+        <p style={{ color: 'var(--muted)' }}>Loading…</p>
+      </div>
+    )
+  }
+
+  if (hosted && !authUser) {
+    return (
+      <LoginScreen
+        onSignedIn={() => {
+          refreshAuth()
+          refreshHealth()
+        }}
+      />
+    )
+  }
+
   if (showLanding) {
     return <LandingHero onEnter={enterFromLanding} />
   }
@@ -802,6 +846,20 @@ export default function App() {
             >
               Settings
             </button>
+            {authUser && (
+              <button
+                type="button"
+                className="app-tab"
+                onClick={() => {
+                  void logout().finally(() => {
+                    setAuthUser(null)
+                    refreshAuth()
+                  })
+                }}
+              >
+                Sign out
+              </button>
+            )}
           </nav>
         </div>
         {tab === 'pipeline' && (
@@ -859,18 +917,29 @@ export default function App() {
 
       {tab === 'settings' && (
         <SettingsPanel
+          authUser={authUser}
+          hosted={hosted}
           onKeysChanged={() => {
             refreshHealth()
           }}
         />
       )}
 
-      {tab === 'library' && <SamplesGallery onOpenCampaign={handleOpenPastCampaign} />}
+      {tab === 'library' && (
+        <SamplesGallery
+          onOpenCampaign={handleOpenPastCampaign}
+          desktopTools={desktopTools}
+        />
+      )}
 
       {tab === 'pipeline' && (
         <>
           {step === 0 && (
-            <IntakeStep onNext={handleIntake} onLoadSample={handleLoadSample} />
+            <IntakeStep
+              onNext={handleIntake}
+              onLoadSample={handleLoadSample}
+              desktopTools={desktopTools}
+            />
           )}
           {step === 1 && brief && campaignId && (
             <ReviewStep

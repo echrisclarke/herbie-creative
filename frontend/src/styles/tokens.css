@@ -125,3 +125,28 @@
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.login-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.login-form .field input {
+  appearance: none;
+  background: color-mix(in srgb, var(--panel) 70%, #000);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+}
