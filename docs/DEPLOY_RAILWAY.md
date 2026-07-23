@@ -1,10 +1,10 @@
-# Deploy Herbie Creative Campaign Pipeline at herbiecreative.com/pipeline
+# Deploy Campaign Pipeline at pipeline.herbiecreative.com
 
-Live URL: **https://herbiecreative.com/pipeline**
+Live URL: **https://pipeline.herbiecreative.com/**
 
-The FastAPI app runs on Railway under the `/pipeline` path. Bluehost keeps the main PHP site and reverse-proxies only `/pipeline` to Railway. DNS stays in Squarespace (A record for `@` → Bluehost). Do **not** create a Bluehost `public_html/pipeline` app folder, and do **not** add a Squarespace CNAME for a campaign subdomain.
+The FastAPI app runs on Railway. DNS for the subdomain is a Squarespace CNAME to Railway. The main site (`herbiecreative.com` → Bluehost) stays unchanged. Bluehost reverse proxy is **not** used (shared hosting blocks `ProxyPass`).
 
-## 1. Railway
+## 1. Railway app settings
 
 1. Connect GitHub `echrisclarke/herbie-creative` and deploy (Dockerfile).
 2. **Variables:**
@@ -12,7 +12,7 @@ The FastAPI app runs on Railway under the `/pipeline` path. Bluehost keeps the m
 | Variable | Value |
 |---|---|
 | `HOSTED` | `1` |
-| `ROOT_PATH` | `/pipeline` (also set in the Dockerfile) |
+| `ROOT_PATH` | leave empty / unset (app at domain root) |
 | `DATA_ROOT` | `/data` |
 | `CAMPAIGNS_ROOT` | `/data/campaigns` |
 | `SECRET_KEY` | long random string |
@@ -20,48 +20,47 @@ The FastAPI app runs on Railway under the `/pipeline` path. Bluehost keeps the m
 | `BOOTSTRAP_ADMIN_EMAIL` | your email (first admin) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | strong password |
 | `OPENAI_API_KEY` | your key for the pre-signup free trial |
-| `TRIAL_RUNS_LIMIT` | `3` generate runs before signup |
+| `TRIAL_RUNS_LIMIT` | `3` |
 | `TRIAL_MAX_STILLS_PER_RUN` | `6` |
 | `TRIAL_MAX_TOTAL_STILLS` | `18` |
 | `TRIAL_FORCE_QUALITY` | `low` |
-| `TRIAL_GLOBAL_DAILY_RUNS` | `100` site-wide cap |
-
-Guests can try before signup (3 generate runs, low quality, still caps, no motion). After signup they must add their own OpenAI key.
+| `TRIAL_GLOBAL_DAILY_RUNS` | `100` |
 
 3. **Volume** at `/data`.
-4. Confirm the Railway URL works at `https://YOUR-APP.up.railway.app/pipeline/`.
+4. Confirm the default Railway URL works at the **root**:  
+   `https://YOUR-APP.up.railway.app/`  
+   (not `/pipeline/` once `ROOT_PATH` is empty).
 
-No custom domain on Railway is required if Bluehost proxies `/pipeline`.
+## 2. Railway custom domain
 
-## 2. Bluehost reverse proxy
-
-Edit [`public_html/.htaccess`](../../public_html/.htaccess): uncomment the `mod_proxy` block and set your Railway host:
-
-```apache
-<IfModule mod_proxy.c>
-  SSLProxyEngine On
-  ProxyPreserveHost Off
-  ProxyPass        /pipeline https://YOUR-APP.up.railway.app/pipeline
-  ProxyPassReverse /pipeline https://YOUR-APP.up.railway.app/pipeline
-</IfModule>
-```
-
-Upload via Upload Manager. Then open https://herbiecreative.com/pipeline/
-
-If Apache returns 500 or ignores ProxyPass, shared hosting may block `mod_proxy`. Ask Bluehost support to allow reverse proxy for `/pipeline`, or put Cloudflare in front and route `/pipeline*` to the Railway origin.
+1. Railway → your service → **Settings → Networking → Custom Domain**.
+2. Add: `pipeline.herbiecreative.com`
+3. Copy the **CNAME** target Railway shows (and the **TXT** verify record if shown).
 
 ## 3. Squarespace DNS
 
-Leave `@` pointing at Bluehost (`162.241.226.190`). No new CNAME for this app.
+DNS for `herbiecreative.com` is in Squarespace. Leave `@` → Bluehost alone.
 
-## 4. Invite users
+1. Squarespace → **Domains** → `herbiecreative.com` → **DNS Settings**.
+2. Add **CNAME**:
+   - Host: `pipeline`
+   - Data / points to: the value Railway gave you (often `….up.railway.app`)
+3. If Railway shows a **TXT** for verification, add that too.
+4. Wait for DNS (often a few minutes; can take longer).
 
-Admin → Settings → Invite user. Each account gets 3 free generate runs on your host key, then must add their own OpenAI key.
+## 4. Confirm
+
+Open **https://pipeline.herbiecreative.com/**  
+You should see Campaign Pipeline (landing / free trial / login).
+
+## 5. Optional hub link
+
+On the main PHP site, link to `https://pipeline.herbiecreative.com/` (no Bluehost upload required for the app itself).
 
 ## Local vs live
 
 | | Local (`run_app.py`) | Live |
 |---|---|---|
-| URL | http://127.0.0.1:8000/ | https://herbiecreative.com/pipeline/ |
-| `ROOT_PATH` | unset | `/pipeline` |
-| Login | Not required | Required |
+| URL | http://127.0.0.1:8000/ | https://pipeline.herbiecreative.com/ |
+| `ROOT_PATH` | unset | unset / empty |
+| Login | Not required | Hosted mode (guest trial, then signup) |

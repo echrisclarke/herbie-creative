@@ -183,7 +183,7 @@ export type FinalizeChoices = {
   product_copy?: Record<string, { message: string; cta: string; supporting?: string }>
 }
 
-/** Public URL prefix when live at herbiecreative.com/pipeline (empty locally). */
+/** Public URL prefix when the app is mounted under /pipeline (empty on subdomain root). */
 export function publicBase(): string {
   if (import.meta.env.DEV) return ''
   if (typeof window === 'undefined') return ''

@@ -16,8 +16,10 @@ WORKDIR /app/backend
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir .
 
+# ROOT_PATH empty: app at host root (pipeline.herbiecreative.com).
+# Set ROOT_PATH=/pipeline in Railway only if you need a path prefix again.
 ENV HOSTED=1 \
-    ROOT_PATH=/pipeline \
+    ROOT_PATH= \
     DATA_ROOT=/data \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1

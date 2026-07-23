@@ -1,4 +1,4 @@
-"""Serve the app under a URL prefix (e.g. /pipeline) for herbiecreative.com/pipeline."""
+"""Optional URL prefix (e.g. /pipeline). Empty when the app owns the host root."""
 from __future__ import annotations
 
 import os
@@ -9,11 +9,13 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 
 def root_path() -> str:
-    """Public URL prefix with no trailing slash. Empty for local root hosting."""
+    """Public URL prefix with no trailing slash.
+
+    Empty for local and for subdomain hosting (pipeline.herbiecreative.com).
+    Set ROOT_PATH=/pipeline only if you need a path prefix on a shared host.
+    """
     raw = (os.getenv("ROOT_PATH") or "").strip()
-    if not raw and os.getenv("HOSTED", "").strip().lower() in {"1", "true", "yes", "on"}:
-        raw = "/pipeline"
-    if not raw or raw == "/":
+    if not raw or raw == "/" or raw.lower() in {"none", "off"}:
         return ""
     if not raw.startswith("/"):
         raw = "/" + raw
@@ -21,7 +23,7 @@ def root_path() -> str:
 
 
 class RootPathMiddleware:
-    """Redirect bare / to /pipeline/, and strip the prefix before the app sees the path."""
+    """Redirect bare / to the prefix, and strip the prefix before the app sees the path."""
 
     def __init__(self, app: ASGIApp, prefix: str) -> None:
         self.app = app
