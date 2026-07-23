@@ -335,6 +335,12 @@ export type TrialStatus = {
   can_use_host_openai?: boolean
 }
 
+export async function fetchPublicGallery() {
+  const res = await apiFetch(`${API}/public-gallery`)
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<GalleryResponse>
+}
+
 export async function getHealth() {
   const res = await apiFetch(`${API}/health`)
   return res.json() as Promise<{

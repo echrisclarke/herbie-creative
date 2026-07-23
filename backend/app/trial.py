@@ -1,8 +1,8 @@
 """Post-signup free trial on the host API key, with hard generate/still caps.
 
-Guests may browse samples/library only. Generate requires an account so stills
-save under campaigns/<user_id>/. Signed-in users get a short host-key trial,
-then must add their own OpenAI key.
+Public landing can show curated example creatives. Pipeline, private library,
+and settings require an account so stills save under campaigns/<user_id>/.
+Signed-in users get a short host-key trial, then must add their own OpenAI key.
 """
 from __future__ import annotations
 

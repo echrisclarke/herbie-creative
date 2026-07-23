@@ -73,6 +73,7 @@ _PUBLIC_PREFIXES = (
     "/assets/",
     "/brand/",
     "/sample-assets/",
+    "/examples/",
     "/docs",
     "/openapi.json",
     "/redoc",
@@ -90,7 +91,14 @@ def _app_path(path: str) -> str:
 
 def _requires_auth(path: str) -> bool:
     path = _app_path(path)
-    if path in {"/health", "/auth/login", "/auth/signup", "/auth/me", "/favicon.ico"}:
+    if path in {
+        "/health",
+        "/auth/login",
+        "/auth/signup",
+        "/auth/me",
+        "/favicon.ico",
+        "/public-gallery",
+    }:
         return False
     if path.startswith(_PUBLIC_PREFIXES):
         return False
@@ -359,6 +367,14 @@ def put_settings_keys(body: dict) -> dict:
         ) from exc
 
 
+@app.get("/public-gallery")
+def public_gallery() -> dict:
+    """Curated demo creatives (no account). Private user library stays behind auth."""
+    from app.public_examples import list_public_examples
+
+    return list_public_examples()
+
+
 @app.get("/gallery")
 def gallery(
     campaign_id: str | None = None,
@@ -366,7 +382,35 @@ def gallery(
     brand: str | None = None,
     kind: str | None = None,
 ) -> dict:
-    return list_gallery(campaign_id=campaign_id, ratio=ratio, brand=brand, kind=kind)
+    private = list_gallery(campaign_id=campaign_id, ratio=ratio, brand=brand, kind=kind)
+    # Signed-in library also shows the shipped public examples at the top.
+    from app.public_examples import list_public_examples
+
+    public = list_public_examples()
+    if not campaign_id and not brand and not kind:
+        creatives = list(public.get("creatives") or []) + list(private.get("creatives") or [])
+        campaigns = list(public.get("campaigns") or []) + list(private.get("campaigns") or [])
+        filters = private.get("filters") or {}
+        pub_filters = public.get("filters") or {}
+        return {
+            **private,
+            "campaigns": campaigns,
+            "creatives": creatives,
+            "filters": {
+                "ratios": sorted(
+                    set(filters.get("ratios") or []) | set(pub_filters.get("ratios") or [])
+                ),
+                "brands": sorted(
+                    set(filters.get("brands") or []) | set(pub_filters.get("brands") or [])
+                ),
+                "campaigns": list(pub_filters.get("campaigns") or [])
+                + list(filters.get("campaigns") or []),
+                "kinds": sorted(
+                    set(filters.get("kinds") or []) | set(pub_filters.get("kinds") or [])
+                ),
+            },
+        }
+    return private
 
 
 @app.get("/campaigns")

@@ -1,0 +1,16 @@
+﻿{
+  "campaigns": [
+    {
+      "id": "jordan-hero-zoom",
+      "title": "Jordan hero zoom",
+      "brand": "Jordan",
+      "description": "Featured demo finals (en-US) across 1:1, 9:16, and 16:9."
+    },
+    {
+      "id": "jordan-clara-studio-candid",
+      "title": "Jordan Clara studio candid",
+      "brand": "Jordan",
+      "description": "Studio candid stills with Clara likeness and product focus."
+    }
+  ]
+}

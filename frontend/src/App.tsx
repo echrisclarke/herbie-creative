@@ -16,6 +16,7 @@ import {
 } from './components/LandingHero'
 import { InstallSetup } from './components/InstallSetup'
 import { LoginScreen } from './components/LoginScreen'
+import { PublicExamplesGallery } from './components/PublicExamplesGallery'
 import {
   approveCampaign,
   cleanupEphemeral,
@@ -78,6 +79,7 @@ function mergeMotionPaths(
 export default function App() {
   // First visit: landing once per browser, then InstallSetup until OpenAI key or skip.
   const [showLanding, setShowLanding] = useState(() => !hasSeenLanding())
+  const [showPublicExamples, setShowPublicExamples] = useState(false)
   const [showInstall, setShowInstall] = useState(false)
   const [installSkipped, setInstallSkipped] = useState(false)
   const [healthReady, setHealthReady] = useState(false)
@@ -799,8 +801,32 @@ export default function App() {
     )
   }
 
+  if (showPublicExamples && (!hosted || !authUser)) {
+    return (
+      <PublicExamplesGallery
+        onBack={() => {
+          setShowPublicExamples(false)
+          setShowLanding(true)
+        }}
+        onGetStarted={() => {
+          setShowPublicExamples(false)
+          setShowLanding(false)
+          markLandingSeen()
+        }}
+      />
+    )
+  }
+
   if (showLanding) {
-    return <LandingHero onEnter={enterFromLanding} />
+    return (
+      <LandingHero
+        onEnter={enterFromLanding}
+        onViewExamples={() => {
+          setShowPublicExamples(true)
+          setShowLanding(false)
+        }}
+      />
+    )
   }
 
   // After landing: account required for pipeline, library, and settings.
