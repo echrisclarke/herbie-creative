@@ -86,7 +86,6 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [trial, setTrial] = useState<TrialStatus | null>(null)
-  const [forceAuth, setForceAuth] = useState(false)
   const [tab, setTab] = useState<AppTab>('pipeline')
   const [step, setStep] = useState(0)
   /** Highest step unlocked this run. Going back must not lock Finalize/Motion/Results. */
@@ -125,7 +124,6 @@ export default function App() {
         setHosted(Boolean(h.hosted))
         setDesktopTools(h.desktop_tools !== false)
         setTrial(h.trial || null)
-        if (h.auth_required) setForceAuth(true)
         setHealthReady(true)
       })
       .catch(() => {
@@ -182,21 +180,10 @@ export default function App() {
   function enterFromLanding() {
     markLandingSeen()
     setShowLanding(false)
-    if (hosted && !authUser) {
-      setForceAuth(true)
-      return
-    }
+    if (hosted && !authUser) return
     if (healthReady && !openaiConfigured && !installSkipped) {
       setShowInstall(true)
     }
-  }
-
-  function requireAccount(_reason: 'pipeline' | 'settings' | 'generate' = 'pipeline') {
-    if (hosted && !authUser) {
-      setForceAuth(true)
-      return false
-    }
-    return true
   }
 
   useEffect(() => {
@@ -823,7 +810,6 @@ export default function App() {
         initialMode="signup"
         trialMessage="Create a free account to use Campaign Pipeline. You get 3 trial generate runs on the demo key; your library and creatives stay in your account."
         onSignedIn={() => {
-          setForceAuth(false)
           refreshAuth()
           refreshHealth()
         }}
@@ -863,42 +849,24 @@ export default function App() {
             <button
               type="button"
               className={tab === 'pipeline' ? 'app-tab active' : 'app-tab'}
-              onClick={() => {
-                if (!requireAccount('pipeline')) return
-                setTab('pipeline')
-              }}
+              onClick={() => setTab('pipeline')}
             >
               Pipeline
             </button>
             <button
               type="button"
               className={tab === 'library' ? 'app-tab active' : 'app-tab'}
-              onClick={() => {
-                if (!requireAccount('pipeline')) return
-                setTab('library')
-              }}
+              onClick={() => setTab('library')}
             >
               Library
             </button>
             <button
               type="button"
               className={tab === 'settings' ? 'app-tab active' : 'app-tab'}
-              onClick={() => {
-                if (!requireAccount('settings')) return
-                setTab('settings')
-              }}
+              onClick={() => setTab('settings')}
             >
               Settings
             </button>
-            {hosted && !authUser && (
-              <button
-                type="button"
-                className="app-tab"
-                onClick={() => setForceAuth(true)}
-              >
-                Sign up
-              </button>
-            )}
             {authUser && (
               <button
                 type="button"
