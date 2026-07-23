@@ -126,6 +126,12 @@
   word-break: break-word;
 }
 
+.auth-mode-toggle {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;

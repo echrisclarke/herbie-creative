@@ -232,6 +232,20 @@ export async function login(email: string, password: string) {
   }>
 }
 
+export async function signup(email: string, password: string) {
+  const res = await apiFetch(`${API}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<{
+    ok: boolean
+    hosted: boolean
+    user: AuthUser | null
+  }>
+}
+
 export async function logout() {
   const res = await apiFetch(`${API}/auth/logout`, { method: 'POST' })
   if (!res.ok) throw new Error(await res.text())

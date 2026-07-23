@@ -100,7 +100,7 @@ _PUBLIC_PREFIXES = (
 
 
 def _requires_auth(path: str) -> bool:
-    if path in {"/health", "/auth/login", "/auth/me", "/favicon.ico"}:
+    if path in {"/health", "/auth/login", "/auth/signup", "/auth/me", "/favicon.ico"}:
         return False
     if path.startswith(_PUBLIC_PREFIXES):
         return False
@@ -222,6 +222,29 @@ async def auth_login(request: Request, body: dict) -> dict:
     user = authenticate(email, password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    request.session["user_id"] = user.id
+    request.session["email"] = user.email
+    return {
+        "ok": True,
+        "hosted": True,
+        "user": {"id": user.id, "email": user.email, "is_admin": user.is_admin},
+    }
+
+
+@app.post("/auth/signup")
+async def auth_signup(request: Request, body: dict) -> dict:
+    """Public account creation. New users are never created as admins."""
+    from app.auth_store import create_user, init_db
+
+    if not hosted_mode():
+        raise HTTPException(status_code=400, detail="Sign up is only available online")
+    init_db()
+    email = str(body.get("email") or "").strip()
+    password = str(body.get("password") or "")
+    try:
+        user = create_user(email, password, is_admin=False)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     request.session["user_id"] = user.id
     request.session["email"] = user.email
     return {
