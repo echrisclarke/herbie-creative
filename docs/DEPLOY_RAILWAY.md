@@ -26,7 +26,7 @@ The FastAPI app runs on Railway. DNS for the subdomain is a Squarespace CNAME to
 | `TRIAL_FORCE_QUALITY` | `low` |
 | `TRIAL_GLOBAL_DAILY_RUNS` | `100` |
 
-Visitors can browse the library without an account. Signup is required to run the pipeline so creatives save under `campaigns/<user_id>/`. New accounts get 3 host-key generate runs (low quality, still caps), then add their own OpenAI key.
+Landing is public. Signup is required for pipeline, library, and settings so creatives stay under `campaigns/<user_id>/`. New accounts get 3 host-key generate runs (low quality, still caps), then add their own OpenAI key.
 
 3. **Volume** at `/data`.
 4. Confirm the default Railway URL works at the **root**:  

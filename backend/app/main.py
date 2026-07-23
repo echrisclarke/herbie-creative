@@ -124,19 +124,8 @@ def _job_tenant_kwargs() -> dict:
     }
 
 
-def _guest_browse_allowed(path: str) -> bool:
-    """Read-only sample/library routes before signup."""
-    path = _app_path(path)
-    if path.startswith(("/samples", "/gallery", "/fonts/")) or path in {
-        "/gallery",
-        "/samples",
-    }:
-        return True
-    return False
-
-
 class TenantAuthMiddleware(BaseHTTPMiddleware):
-    """Signed-in accounts for pipeline work; guests may only browse samples."""
+    """Signed-in accounts only for pipeline, library, and settings."""
 
     async def dispatch(self, request: Request, call_next):
         path = _app_path(request.url.path)
@@ -160,10 +149,6 @@ class TenantAuthMiddleware(BaseHTTPMiddleware):
                 return await call_next(request)
             finally:
                 reset_tenant(tokens)
-
-        # Browse-only: no guest generate folder, no Settings, no campaigns.
-        if _guest_browse_allowed(path) and request.method in {"GET", "HEAD", "OPTIONS"}:
-            return await call_next(request)
 
         return JSONResponse(
             {

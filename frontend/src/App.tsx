@@ -153,12 +153,6 @@ export default function App() {
     refreshAuth()
   }, [])
 
-  useEffect(() => {
-    if (hosted && !authUser && (tab === 'pipeline' || tab === 'settings')) {
-      setTab('library')
-    }
-  }, [hosted, authUser, tab])
-
   const accountTrialActive =
     hosted &&
     Boolean(authUser) &&
@@ -818,12 +812,16 @@ export default function App() {
     )
   }
 
-  // Sign up before pipeline / generate so creatives save under the account.
-  if (hosted && !authUser && forceAuth) {
+  if (showLanding) {
+    return <LandingHero onEnter={enterFromLanding} />
+  }
+
+  // After landing: account required for pipeline, library, and settings.
+  if (hosted && !authUser) {
     return (
       <LoginScreen
         initialMode="signup"
-        trialMessage="Create a free account to run the pipeline. You get 3 trial generate runs on the demo key; stills save to your account."
+        trialMessage="Create a free account to use Campaign Pipeline. You get 3 trial generate runs on the demo key; your library and creatives stay in your account."
         onSignedIn={() => {
           setForceAuth(false)
           refreshAuth()
@@ -831,10 +829,6 @@ export default function App() {
         }}
       />
     )
-  }
-
-  if (showLanding) {
-    return <LandingHero onEnter={enterFromLanding} />
   }
 
   if (showInstall) {
@@ -879,7 +873,10 @@ export default function App() {
             <button
               type="button"
               className={tab === 'library' ? 'app-tab active' : 'app-tab'}
-              onClick={() => setTab('library')}
+              onClick={() => {
+                if (!requireAccount('pipeline')) return
+                setTab('library')
+              }}
             >
               Library
             </button>
@@ -918,12 +915,6 @@ export default function App() {
             )}
           </nav>
         </div>
-        {hosted && !authUser && (
-          <div className="banner" style={{ margin: '0.75rem 1.25rem 0' }}>
-            Browse the library freely. Sign up to run the pipeline. Free trial includes{' '}
-            {trial?.limit ?? 3} generate runs on the demo key; creatives save to your account.
-          </div>
-        )}
         {accountTrialActive && (
           <div className="banner" style={{ margin: '0.75rem 1.25rem 0' }}>
             Free trial: {trial?.remaining ?? 0} of {trial?.limit ?? 3} generate runs left
