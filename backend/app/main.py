@@ -172,15 +172,21 @@ def health(request: Request) -> dict:
     openai_ok = bool(get_openai_api_key())
     xai_ok = bool(get_xai_api_key())
     google_ok = bool(get_google_fonts_api_key())
+    trial_info = None
     if hosted_mode():
-        # /health is public; load the signed-in user's keys when a session exists.
+        from app.auth_store import load_user_keys
+        from app.trial import trial_status
+
         uid = request.session.get("user_id")
         if uid:
-            from app.auth_store import load_user_keys
-
             keys = load_user_keys(str(uid))
-            openai_ok = bool(keys.get("openai_api_key"))
-            xai_ok = bool(keys.get("xai_api_key"))
+            trial_info = trial_status(str(uid))
+            openai_ok = bool(keys.get("openai_api_key")) or bool(
+                trial_info.get("openai_ready")
+            )
+            xai_ok = bool(keys.get("xai_api_key")) or bool(
+                trial_info.get("can_use_host_xai")
+            )
             google_ok = bool(keys.get("google_fonts_api_key")) or google_ok
         else:
             openai_ok = False
@@ -193,6 +199,7 @@ def health(request: Request) -> dict:
         "motion_available": xai_ok,
         "openai_configured": openai_ok,
         "google_fonts_catalog": google_ok,
+        "trial": trial_info,
     }
 
 
@@ -541,12 +548,44 @@ async def generate_campaign(
     body: GenerateRequest,
     background: BackgroundTasks,
 ) -> dict:
+    from app.trial import (
+        consume_trial_run_if_needed,
+        host_openai_key,
+        host_xai_key,
+        require_generate_access,
+        trial_status,
+    )
+
+    try:
+        require_generate_access()
+    except ValueError as exc:
+        raise HTTPException(status_code=402, detail=str(exc)) from exc
+
+    job_kwargs = _job_tenant_kwargs()
+    status = trial_status()
+    keys = dict(job_kwargs.get("api_keys") or {})
+    # Snapshot host trial keys into the job so a consume mid-request cannot race the worker.
+    if status.get("can_use_host_openai") and not keys.get("openai_api_key"):
+        host_key = host_openai_key()
+        if host_key:
+            keys["openai_api_key"] = host_key
+        if status.get("can_use_host_xai") and not keys.get("xai_api_key"):
+            xai = host_xai_key()
+            if xai:
+                keys["xai_api_key"] = xai
+        job_kwargs["api_keys"] = keys
+    used_trial = consume_trial_run_if_needed()
+
     job_id = f"{campaign_id}-job"
     loop = asyncio.get_running_loop()
     background.add_task(
-        run_generate_job, campaign_id, body, loop, **_job_tenant_kwargs()
+        run_generate_job, campaign_id, body, loop, **job_kwargs
     )
-    return {"job_id": job_id}
+    return {
+        "job_id": job_id,
+        "trial_run_consumed": used_trial,
+        "trial": trial_status(),
+    }
 
 
 @app.post("/campaigns/{campaign_id}/suggest-finalize")

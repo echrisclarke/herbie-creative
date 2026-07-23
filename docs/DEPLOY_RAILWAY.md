@@ -1,6 +1,6 @@
 # Deploy Herbie Creative on Railway
 
-This app is FastAPI + the built React UI. It does **not** run on Bluehost shared PHP hosting. Railway runs the same system; Bluehost only needs a DNS CNAME for your subdomain.
+This app is FastAPI + the built React UI. It does **not** run on Bluehost shared PHP hosting. Railway runs the same system. DNS for `herbiecreative.com` is managed in **Squarespace**.
 
 ## 1. Push this repo
 
@@ -25,26 +25,30 @@ Commit and push `main` (Dockerfile + `railway.toml` included) to GitHub:
 | `ENCRYPTION_KEY` | long random string (encrypts user API keys) |
 | `BOOTSTRAP_ADMIN_EMAIL` | your email (first admin only) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | strong password (change after first login) |
+| `OPENAI_API_KEY` | **your** key for the 3-run free trial only |
+| `XAI_API_KEY` | optional; trial motion while free runs remain |
+| `TRIAL_RUNS_LIMIT` | `3` (default) |
 
-Do **not** set `OPENAI_API_KEY` / `XAI_API_KEY` on the server for shared use. Each user pastes their own keys in Settings after login.
+After 3 generate runs without their own key, users must paste an OpenAI key in Settings. Your host key is never shown in the UI.
 
 5. **Volume:** add a volume mounted at `/data` so campaigns and `app.db` survive redeploys.
 6. Redeploy. Build should use the Dockerfile (not Railpack guessing).
-7. Open the Railway URL → sign in with the bootstrap admin → Settings → add your OpenAI key.
+7. Open the Railway URL → sign in with the bootstrap admin.
 
-## 3. Custom domain (Bluehost DNS)
+## 3. Custom domain DNS (Squarespace, not Bluehost folders)
 
-1. In Railway → service → **Settings → Networking → Custom Domain** → add `campaign.herbiecreative.com` (or the name you want).
-2. Railway shows a CNAME target (for example `xxx.up.railway.app`).
-3. In Bluehost → Domains → Zone Editor for `herbiecreative.com`:
+Do **not** create a Bluehost `public_html` subdomain folder for this app. The portfolio stays on Bluehost; the campaign app stays on Railway.
+
+1. Railway → Custom Domain → add `campaign.herbiecreative.com` (copy the CNAME target).
+2. Squarespace → Domains → DNS → **Custom records** → **Add record**:
    - Type: **CNAME**
-   - Host: `campaign`
-   - Points to: the Railway hostname
-4. Wait for DNS, then confirm HTTPS works on `https://campaign.herbiecreative.com`.
+   - Name: `campaign`
+   - Data: the Railway hostname (for example `something.up.railway.app`)
+3. Save and wait for DNS. HTTPS is handled by Railway.
 
 ## 4. Invite other users
 
-While signed in as the admin, open **Settings → Invite user**. They get their own campaigns and API keys.
+While signed in as the admin, open **Settings → Invite user**. They get their own campaigns and API keys (plus the 3 free trial runs).
 
 ## 5. Optional hub link
 
@@ -55,6 +59,6 @@ On `herbiecreative.com` (Bluehost `public_html`), add a link to `https://campaig
 | | Local (`run_app.py`) | Railway (`HOSTED=1`) |
 |---|---|---|
 | Login | Not required | Required |
-| API keys | `.env` or `private/api_keys.json` | Per-user encrypted in SQLite |
+| API keys | `.env` or `private/api_keys.json` | Per-user encrypted; 3 trial runs on host key |
 | Campaigns | `campaigns/` | `/data/campaigns/<user_id>/` |
 | Reveal folder / Local CLI | Available | Hidden |

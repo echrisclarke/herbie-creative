@@ -44,7 +44,8 @@ def init_db() -> None:
                 email TEXT NOT NULL UNIQUE COLLATE NOCASE,
                 password_hash TEXT NOT NULL,
                 is_admin INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                trial_runs_used INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS user_secrets (
                 user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -55,6 +56,14 @@ def init_db() -> None:
             );
             """
         )
+        cols = {
+            str(row[1])
+            for row in conn.execute("PRAGMA table_info(users)").fetchall()
+        }
+        if "trial_runs_used" not in cols:
+            conn.execute(
+                "ALTER TABLE users ADD COLUMN trial_runs_used INTEGER NOT NULL DEFAULT 0"
+            )
 
 
 def _hash_password(password: str, *, salt: bytes | None = None) -> str:
@@ -238,6 +247,37 @@ def update_user_keys(
             ),
         )
     return current
+
+
+def get_trial_runs_used(user_id: str) -> int:
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT trial_runs_used FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    if not row:
+        return 0
+    try:
+        return max(0, int(row["trial_runs_used"] or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def increment_trial_runs_used(user_id: str) -> int:
+    with _connect() as conn:
+        conn.execute(
+            """
+            UPDATE users
+            SET trial_runs_used = COALESCE(trial_runs_used, 0) + 1
+            WHERE id = ?
+            """,
+            (user_id,),
+        )
+        row = conn.execute(
+            "SELECT trial_runs_used FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    return int(row["trial_runs_used"] if row else 0)
 
 
 def bootstrap_admin_from_env() -> dict[str, Any] | None:

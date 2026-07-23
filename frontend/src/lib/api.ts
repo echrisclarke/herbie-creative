@@ -251,6 +251,8 @@ export type SettingsKeys = {
   google_fonts: KeyStatus
   stored_file: string
   has_stored_file: boolean
+  hosted?: boolean
+  trial?: TrialStatus | null
 }
 
 export type GalleryCreative = {
@@ -284,6 +286,16 @@ export type GalleryResponse = {
   }
 }
 
+export type TrialStatus = {
+  enabled?: boolean
+  limit?: number
+  used?: number
+  remaining?: number
+  has_own_openai?: boolean
+  openai_ready?: boolean
+  can_use_host_openai?: boolean
+}
+
 export async function getHealth() {
   const res = await apiFetch(`${API}/health`)
   return res.json() as Promise<{
@@ -294,6 +306,7 @@ export async function getHealth() {
     motion_available: boolean
     openai_configured?: boolean
     google_fonts_catalog?: boolean
+    trial?: TrialStatus | null
   }>
 }
 

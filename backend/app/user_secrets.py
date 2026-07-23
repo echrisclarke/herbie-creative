@@ -87,17 +87,31 @@ def get_stored_xai_key() -> str | None:
 
 def resolve_openai_key() -> str | None:
     stored = get_stored_openai_key()
-    if hosted_mode():
-        # Hosted: never fall back to the server owner's env keys.
+    if stored:
         return stored
-    return stored or (os.getenv("OPENAI_API_KEY") or None) or None
+    if hosted_mode():
+        # Limited free trial on the host OPENAI_API_KEY, then users must add their own.
+        from app.trial import host_openai_key, trial_status
+
+        status = trial_status()
+        if status.get("can_use_host_openai"):
+            return host_openai_key()
+        return None
+    return (os.getenv("OPENAI_API_KEY") or None) or None
 
 
 def resolve_xai_key() -> str | None:
     stored = get_stored_xai_key()
-    if hosted_mode():
+    if stored:
         return stored
-    return stored or (os.getenv("XAI_API_KEY") or None) or None
+    if hosted_mode():
+        from app.trial import host_xai_key, trial_status
+
+        status = trial_status()
+        if status.get("can_use_host_xai"):
+            return host_xai_key()
+        return None
+    return (os.getenv("XAI_API_KEY") or None) or None
 
 
 def _mask(key: str | None) -> str | None:
@@ -128,11 +142,27 @@ def settings_snapshot(*, reveal: bool = False) -> dict[str, Any]:
     openai = resolve_openai_key()
     xai = resolve_xai_key()
     google_fonts = resolve_google_fonts_key()
+    trial: dict[str, Any] | None = None
     if hosted_mode():
+        from app.trial import trial_status
+
+        trial = trial_status()
         stored_rel = "account (encrypted)"
-        has_stored = bool(openai or xai or get_stored_google_fonts_key())
-        openai_source = "settings" if get_stored_openai_key() else None
-        xai_source = "settings" if get_stored_xai_key() else None
+        has_stored = bool(
+            get_stored_openai_key() or get_stored_xai_key() or get_stored_google_fonts_key()
+        )
+        if get_stored_openai_key():
+            openai_source = "settings"
+        elif trial.get("can_use_host_openai"):
+            openai_source = "trial"
+        else:
+            openai_source = None
+        if get_stored_xai_key():
+            xai_source = "settings"
+        elif trial.get("can_use_host_xai"):
+            xai_source = "trial"
+        else:
+            xai_source = None
         google_source = (
             "settings"
             if get_stored_google_fonts_key()
@@ -161,23 +191,37 @@ def settings_snapshot(*, reveal: bool = False) -> dict[str, Any]:
                 "env" if (os.getenv("GOOGLE_FONTS_API_KEY") or "").strip() else None
             )
         )
+    # Never expose the host trial keys through Settings reveal.
+    openai_reveal = get_stored_openai_key() if hosted_mode() else openai
+    xai_reveal = get_stored_xai_key() if hosted_mode() else xai
+    if openai_source == "trial" and trial:
+        openai_hint = f"Free trial ({trial['remaining']} of {trial['limit']} left)"
+    else:
+        openai_hint = _mask(openai_reveal or openai)
+    xai_hint = "Free trial" if xai_source == "trial" else _mask(xai_reveal or xai)
+
     return {
         "openai": {
             "configured": bool(openai),
             "source": openai_source,
-            "hint": _mask(openai),
-            "value": openai if reveal else None,
+            "hint": openai_hint,
+            "value": openai_reveal if reveal else None,
             "label": "OpenAI API key",
-            "help": "Required for image generation, copy, and finalize. Uses your own key.",
+            "help": (
+                "Required for image generation, copy, and finalize. "
+                "Hosted accounts get 3 free generate runs, then use your own key."
+                if hosted_mode()
+                else "Required for image generation, copy, and finalize."
+            ),
             "env_name": "OPENAI_API_KEY",
         },
         "xai": {
             "configured": bool(xai),
             "source": xai_source,
-            "hint": _mask(xai),
-            "value": xai if reveal else None,
+            "hint": xai_hint,
+            "value": xai_reveal if reveal else None,
             "label": "Grok / xAI API key",
-            "help": "Optional. Enables Grok Imagine motion. Uses your own key.",
+            "help": "Optional. Enables Grok Imagine motion.",
             "env_name": "XAI_API_KEY",
         },
         "google_fonts": {
@@ -192,6 +236,7 @@ def settings_snapshot(*, reveal: bool = False) -> dict[str, Any]:
         "stored_file": stored_rel,
         "has_stored_file": has_stored,
         "hosted": hosted_mode(),
+        "trial": trial,
     }
 
 

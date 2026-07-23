@@ -1,5 +1,10 @@
-import { useState } from 'react'
-import { createInvitedUser, type AuthUser } from '../lib/api'
+import { useEffect, useState } from 'react'
+import {
+  createInvitedUser,
+  fetchSettingsKeys,
+  type AuthUser,
+  type TrialStatus,
+} from '../lib/api'
 import { ApiKeysForm } from './ApiKeysForm'
 
 export function SettingsPanel({
@@ -16,6 +21,14 @@ export function SettingsPanel({
   const [inviteMsg, setInviteMsg] = useState<string | null>(null)
   const [inviteErr, setInviteErr] = useState<string | null>(null)
   const [inviteBusy, setInviteBusy] = useState(false)
+  const [trial, setTrial] = useState<TrialStatus | null>(null)
+
+  useEffect(() => {
+    if (!hosted) return
+    void fetchSettingsKeys()
+      .then((s) => setTrial(s.trial || null))
+      .catch(() => setTrial(null))
+  }, [hosted])
 
   return (
     <div className="panel settings-panel">
@@ -25,6 +38,13 @@ export function SettingsPanel({
           ? 'Enter your own OpenAI, Grok, and Google Fonts keys. They are encrypted for your account only.'
           : 'Enter your own OpenAI, Grok, and Google Fonts keys. They are stored locally and never shipped with a public build.'}
       </p>
+      {hosted && trial && !trial.has_own_openai && (
+        <p className="banner" style={{ marginTop: '0.75rem' }}>
+          {typeof trial.remaining === 'number' && trial.remaining > 0
+            ? `Free trial: ${trial.remaining} of ${trial.limit ?? 3} generate runs left on the shared demo key. After that, add your own OpenAI key.`
+            : 'Free trial used up. Add your own OpenAI API key to keep generating.'}
+        </p>
+      )}
       {authUser && (
         <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
           Signed in as <strong>{authUser.email}</strong>
