@@ -57,7 +57,8 @@ class RootPathMiddleware:
             stripped = path[len(self.prefix) :] or "/"
             scope = dict(scope)
             scope["path"] = stripped
-            scope["root_path"] = (scope.get("root_path") or "") + self.prefix
+            # Keep raw_path in sync so StaticFiles / mounts match correctly.
+            scope["raw_path"] = stripped.encode("utf-8")
             await self.app(scope, receive, send)
             return
 
