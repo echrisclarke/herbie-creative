@@ -33,6 +33,12 @@ class RootPathMiddleware:
             return
 
         path = scope.get("path") or "/"
+
+        # Railway / platform probes hit /health without the public prefix.
+        if path == "/health" or path.startswith("/health?"):
+            await self.app(scope, receive, send)
+            return
+
         if path == self.prefix:
             # Canonical trailing slash for the SPA entry.
             if scope["type"] == "http":
