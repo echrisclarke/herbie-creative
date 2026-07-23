@@ -46,8 +46,8 @@ export function InstallSetup({
         </h1>
         <p className="install-setup-product">Campaign Pipeline</p>
         <p className="install-setup-lead">
-          Add your API keys to run the campaign pipeline. On the live site you also get 3 free
-          generate runs before your own OpenAI key is required.
+          Add your API keys to run the campaign pipeline. On the live site, new accounts get 3
+          free generate runs on the demo key before your own OpenAI key is required.
         </p>
 
         <ul className="install-checklist">

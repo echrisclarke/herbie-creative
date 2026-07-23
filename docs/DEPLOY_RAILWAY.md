@@ -19,12 +19,14 @@ The FastAPI app runs on Railway. DNS for the subdomain is a Squarespace CNAME to
 | `ENCRYPTION_KEY` | long random string |
 | `BOOTSTRAP_ADMIN_EMAIL` | your email (first admin) |
 | `BOOTSTRAP_ADMIN_PASSWORD` | strong password |
-| `OPENAI_API_KEY` | your key for the pre-signup free trial |
+| `OPENAI_API_KEY` | your key for the post-signup free trial |
 | `TRIAL_RUNS_LIMIT` | `3` |
 | `TRIAL_MAX_STILLS_PER_RUN` | `6` |
 | `TRIAL_MAX_TOTAL_STILLS` | `18` |
 | `TRIAL_FORCE_QUALITY` | `low` |
 | `TRIAL_GLOBAL_DAILY_RUNS` | `100` |
+
+Visitors can browse the library without an account. Signup is required to run the pipeline so creatives save under `campaigns/<user_id>/`. New accounts get 3 host-key generate runs (low quality, still caps), then add their own OpenAI key.
 
 3. **Volume** at `/data`.
 4. Confirm the default Railway URL works at the **root**:  
@@ -63,4 +65,4 @@ On the main PHP site, link to `https://pipeline.herbiecreative.com/` (no Bluehos
 |---|---|---|
 | URL | http://127.0.0.1:8000/ | https://pipeline.herbiecreative.com/ |
 | `ROOT_PATH` | unset | unset / empty |
-| Login | Not required | Hosted mode (guest trial, then signup) |
+| Login | Not required | Sign up to run; 3 host-key trial runs, then own keys |

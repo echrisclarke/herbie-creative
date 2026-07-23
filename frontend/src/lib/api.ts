@@ -321,6 +321,7 @@ export type TrialStatus = {
   enabled?: boolean
   mode?: 'guest' | 'account' | string
   requires_signup?: boolean
+  requires_signup_to_generate?: boolean
   limit?: number
   used?: number
   remaining?: number

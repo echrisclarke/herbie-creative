@@ -90,11 +90,12 @@ def resolve_openai_key() -> str | None:
     if stored:
         return stored
     if hosted_mode():
-        # Guest free trial only (pre-signup). Signed-in accounts use their own keys.
+        # Post-signup account trial may use the host key until the cap is hit.
         from app.trial import host_openai_key, is_guest_id, trial_status
         from app.tenant import current_user_id
 
-        if is_guest_id(current_user_id()) and trial_status().get("can_use_host_openai"):
+        uid = current_user_id()
+        if uid and not is_guest_id(uid) and trial_status().get("can_use_host_openai"):
             return host_openai_key()
         return None
     return (os.getenv("OPENAI_API_KEY") or None) or None

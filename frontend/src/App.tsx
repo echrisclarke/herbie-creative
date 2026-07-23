@@ -153,14 +153,22 @@ export default function App() {
     refreshAuth()
   }, [])
 
-  const guestTrialActive =
-    hosted && !authUser && Boolean(trial?.can_use_host_openai || (trial?.remaining ?? 0) > 0)
+  useEffect(() => {
+    if (hosted && !authUser && (tab === 'pipeline' || tab === 'settings')) {
+      setTab('library')
+    }
+  }, [hosted, authUser, tab])
+
+  const accountTrialActive =
+    hosted &&
+    Boolean(authUser) &&
+    Boolean(trial?.can_use_host_openai || ((trial?.remaining ?? 0) > 0 && !trial?.has_own_openai))
 
   useEffect(() => {
-    // After landing: block the wizard until a key is saved, trial covers it, or skip.
+    // After landing: block the wizard until a key is saved, account trial covers it, or skip.
     if (!healthReady || showLanding || installSkipped || openaiConfigured) return
-    if (hosted && !authUser && !guestTrialActive) return
-    if (guestTrialActive) return
+    if (hosted && !authUser) return
+    if (accountTrialActive) return
     setShowInstall(true)
   }, [
     healthReady,
@@ -169,7 +177,7 @@ export default function App() {
     openaiConfigured,
     hosted,
     authUser,
-    guestTrialActive,
+    accountTrialActive,
   ])
 
   function finishInstallGate() {
@@ -180,9 +188,21 @@ export default function App() {
   function enterFromLanding() {
     markLandingSeen()
     setShowLanding(false)
+    if (hosted && !authUser) {
+      setForceAuth(true)
+      return
+    }
     if (healthReady && !openaiConfigured && !installSkipped) {
       setShowInstall(true)
     }
+  }
+
+  function requireAccount(reason: 'pipeline' | 'settings' | 'generate' = 'pipeline') {
+    if (hosted && !authUser) {
+      setForceAuth(true)
+      return false
+    }
+    return true
   }
 
   useEffect(() => {
@@ -798,16 +818,12 @@ export default function App() {
     )
   }
 
-  // Guest free trial first; only force signup after trials are used up (or user asks).
-  if (hosted && !authUser && (forceAuth || trial?.requires_signup)) {
+  // Sign up before pipeline / generate so creatives save under the account.
+  if (hosted && !authUser && forceAuth) {
     return (
       <LoginScreen
         initialMode="signup"
-        trialMessage={
-          trial?.requires_signup
-            ? 'Free trial finished. Create an account and add your own OpenAI key to keep going.'
-            : undefined
-        }
+        trialMessage="Create a free account to run the pipeline. You get 3 trial generate runs on the demo key; stills save to your account."
         onSignedIn={() => {
           setForceAuth(false)
           refreshAuth()
@@ -853,7 +869,10 @@ export default function App() {
             <button
               type="button"
               className={tab === 'pipeline' ? 'app-tab active' : 'app-tab'}
-              onClick={() => setTab('pipeline')}
+              onClick={() => {
+                if (!requireAccount('pipeline')) return
+                setTab('pipeline')
+              }}
             >
               Pipeline
             </button>
@@ -867,7 +886,10 @@ export default function App() {
             <button
               type="button"
               className={tab === 'settings' ? 'app-tab active' : 'app-tab'}
-              onClick={() => setTab('settings')}
+              onClick={() => {
+                if (!requireAccount('settings')) return
+                setTab('settings')
+              }}
             >
               Settings
             </button>
@@ -896,13 +918,19 @@ export default function App() {
             )}
           </nav>
         </div>
-        {guestTrialActive && (
+        {hosted && !authUser && (
+          <div className="banner" style={{ margin: '0.75rem 1.25rem 0' }}>
+            Browse the library freely. Sign up to run the pipeline. Free trial includes{' '}
+            {trial?.limit ?? 3} generate runs on the demo key; creatives save to your account.
+          </div>
+        )}
+        {accountTrialActive && (
           <div className="banner" style={{ margin: '0.75rem 1.25rem 0' }}>
             Free trial: {trial?.remaining ?? 0} of {trial?.limit ?? 3} generate runs left
             {typeof trial?.stills_remaining === 'number'
               ? ` · up to ${trial.stills_remaining} stills remaining`
               : ''}
-            . Sign up anytime to save work with your own API keys.
+            . After that, add your own OpenAI key in Settings.
           </div>
         )}
         {tab === 'pipeline' && (

@@ -40,8 +40,9 @@ export function SettingsPanel({
       </p>
       {hosted && trial?.mode === 'account' && !trial.has_own_openai && (
         <p className="banner" style={{ marginTop: '0.75rem' }}>
-          Add your own OpenAI API key to generate. The free trial runs on the shared demo key before
-          you create an account.
+          {trial.can_use_host_openai
+            ? `Free trial active: ${trial.remaining ?? 0} of ${trial.limit ?? 3} generate runs left on the demo key. Add your own OpenAI key anytime.`
+            : 'Free trial finished. Add your own OpenAI API key to keep generating. Creatives already made stay in your account.'}
         </p>
       )}
       {authUser && (

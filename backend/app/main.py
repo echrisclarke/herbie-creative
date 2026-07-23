@@ -124,25 +124,19 @@ def _job_tenant_kwargs() -> dict:
     }
 
 
-def _guest_allowed(path: str) -> bool:
-    """Pipeline routes a guest may use during the pre-signup free trial."""
+def _guest_browse_allowed(path: str) -> bool:
+    """Read-only sample/library routes before signup."""
     path = _app_path(path)
-    if path.startswith(
-        (
-            "/campaigns",
-            "/creatives",
-            "/samples",
-            "/gallery",
-            "/fonts/",
-            "/outputs/",
-        )
-    ) or path in {"/gallery", "/samples"}:
+    if path.startswith(("/samples", "/gallery", "/fonts/")) or path in {
+        "/gallery",
+        "/samples",
+    }:
         return True
     return False
 
 
 class TenantAuthMiddleware(BaseHTTPMiddleware):
-    """Signed-in account, or pre-signup guest trial with host-key caps."""
+    """Signed-in accounts for pipeline work; guests may only browse samples."""
 
     async def dispatch(self, request: Request, call_next):
         path = _app_path(request.url.path)
@@ -150,7 +144,7 @@ class TenantAuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         from app.auth_store import get_user_by_id, init_db, load_user_keys
-        from app.trial import ensure_guest_session, trial_status
+        from app.trial import trial_status
 
         init_db()
         uid = request.session.get("user_id")
@@ -162,24 +156,20 @@ class TenantAuthMiddleware(BaseHTTPMiddleware):
             keys = load_user_keys(user.id)
             tokens = set_tenant(user_id=user.id, email=user.email, api_keys=keys)
             try:
+                request.state.trial = trial_status(user.id)
                 return await call_next(request)
             finally:
                 reset_tenant(tokens)
 
-        if _guest_allowed(path):
-            guest_uid = ensure_guest_session(request.session)
-            status = trial_status(guest_uid)
-            tokens = set_tenant(
-                user_id=guest_uid, email="guest@trial.local", api_keys={}
-            )
-            try:
-                request.state.trial = status
-                return await call_next(request)
-            finally:
-                reset_tenant(tokens)
+        # Browse-only: no guest generate folder, no Settings, no campaigns.
+        if _guest_browse_allowed(path) and request.method in {"GET", "HEAD", "OPTIONS"}:
+            return await call_next(request)
 
         return JSONResponse(
-            {"detail": "Sign up to continue", "requires_signup": True},
+            {
+                "detail": "Sign up to continue. Free trial generates save to your account.",
+                "requires_signup": True,
+            },
             status_code=401,
         )
 
@@ -231,23 +221,25 @@ def health(request: Request) -> dict:
     auth_required = False
     if hosted_mode():
         from app.auth_store import init_db, load_user_keys
-        from app.trial import ensure_guest_session, trial_status
+        from app.trial import trial_status
 
         init_db()
         uid = request.session.get("user_id")
         if uid:
             keys = load_user_keys(str(uid))
             trial_info = trial_status(str(uid))
-            openai_ok = bool(keys.get("openai_api_key"))
+            openai_ok = bool(
+                keys.get("openai_api_key") or trial_info.get("openai_ready")
+            )
             xai_ok = bool(keys.get("xai_api_key"))
             google_ok = bool(keys.get("google_fonts_api_key")) or google_ok
             auth_required = False
         else:
-            guest_uid = ensure_guest_session(request.session)
-            trial_info = trial_status(guest_uid)
-            openai_ok = bool(trial_info.get("openai_ready"))
+            trial_info = trial_status(None)
+            openai_ok = False
             xai_ok = False
-            auth_required = bool(trial_info.get("requires_signup"))
+            # Browse landing/library without forcing login; pipeline/generate asks to sign up.
+            auth_required = False
     return {
         "ok": True,
         "service": "Herbie Creative Campaign Pipeline",

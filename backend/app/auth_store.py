@@ -75,6 +75,10 @@ def init_db() -> None:
             conn.execute(
                 "ALTER TABLE users ADD COLUMN trial_runs_used INTEGER NOT NULL DEFAULT 0"
             )
+        if "trial_stills_used" not in cols:
+            conn.execute(
+                "ALTER TABLE users ADD COLUMN trial_stills_used INTEGER NOT NULL DEFAULT 0"
+            )
 
 
 def _hash_password(password: str, *, salt: bytes | None = None) -> str:
@@ -336,15 +340,34 @@ def get_trial_runs_used(user_id: str) -> int:
         return 0
 
 
+def get_trial_stills_used(user_id: str) -> int:
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT trial_stills_used FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    if not row:
+        return 0
+    try:
+        return max(0, int(row["trial_stills_used"] or 0))
+    except (TypeError, ValueError, KeyError, IndexError):
+        return 0
+
+
 def increment_trial_runs_used(user_id: str) -> int:
+    return increment_trial_usage(user_id, stills=0)
+
+
+def increment_trial_usage(user_id: str, *, stills: int = 0) -> int:
     with _connect() as conn:
         conn.execute(
             """
             UPDATE users
-            SET trial_runs_used = COALESCE(trial_runs_used, 0) + 1
+            SET trial_runs_used = COALESCE(trial_runs_used, 0) + 1,
+                trial_stills_used = COALESCE(trial_stills_used, 0) + ?
             WHERE id = ?
             """,
-            (user_id,),
+            (max(0, stills), user_id),
         )
         row = conn.execute(
             "SELECT trial_runs_used FROM users WHERE id = ?",
