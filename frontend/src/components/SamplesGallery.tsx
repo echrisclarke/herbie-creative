@@ -7,6 +7,7 @@ import {
   getHealth,
   listPastCampaigns,
   outputUrl,
+  publicUrl,
   revealCampaignFolder,
   type GalleryCreative,
   type GalleryResponse,
@@ -40,8 +41,13 @@ function galleryItemKey(item: GalleryCreative) {
 
 function galleryItemPath(item: GalleryCreative) {
   let path = item.url.replace(/\\/g, '/')
+  if (path.startsWith('/pipeline/')) path = path.slice('/pipeline'.length)
   if (path.startsWith('/outputs/')) path = path.slice('/outputs/'.length)
   return path
+}
+
+function galleryMediaUrl(url: string) {
+  return publicUrl(url.startsWith('/') ? url : `/${url}`)
 }
 
 function MotionThumb({ src }: { src: string }) {
@@ -407,7 +413,7 @@ export function SamplesGallery({
                 <div key={c.id} className="past-campaign-row">
                   <div className="past-campaign-thumb">
                     {c.thumb_url ? (
-                      <img src={c.thumb_url} alt="" loading="lazy" />
+                      <img src={galleryMediaUrl(c.thumb_url)} alt="" loading="lazy" />
                     ) : (
                       <div className="past-campaign-placeholder" />
                     )}
@@ -614,10 +620,10 @@ export function SamplesGallery({
                       >
                         <div className={`gallery-thumb ratio-${ratioLabel.replace(':', 'x')}`}>
                           {motion ? (
-                            <MotionThumb src={item.url} />
+                            <MotionThumb src={galleryMediaUrl(item.url)} />
                           ) : (
                             <img
-                              src={item.url}
+                              src={galleryMediaUrl(item.url)}
                               alt={`${item.campaign_name} ${item.product}`}
                               loading="lazy"
                             />
@@ -669,19 +675,28 @@ export function SamplesGallery({
             </div>
             {isMotionItem(lightbox) ? (
               <video
-                src={lightbox.url}
+                src={galleryMediaUrl(lightbox.url)}
                 controls
                 playsInline
                 className="lightbox-media"
               />
             ) : (
-              <img src={lightbox.url} alt={lightbox.product} className="lightbox-media" />
+              <img
+                src={galleryMediaUrl(lightbox.url)}
+                alt={lightbox.product}
+                className="lightbox-media"
+              />
             )}
             {lightboxMotionError && (
               <div className="banner banner-danger">{lightboxMotionError}</div>
             )}
             <div className="action-row" style={{ marginTop: '0.75rem' }}>
-              <a className="btn-ghost" href={lightbox.url} target="_blank" rel="noreferrer">
+              <a
+                className="btn-ghost"
+                href={galleryMediaUrl(lightbox.url)}
+                target="_blank"
+                rel="noreferrer"
+              >
                 {isMotionItem(lightbox) ? 'Open / download video' : 'Open full size'}
               </a>
               {!isMotionItem(lightbox) && motionAvailable && (

@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir .
 
 ENV HOSTED=1 \
+    ROOT_PATH=/pipeline \
     DATA_ROOT=/data \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1

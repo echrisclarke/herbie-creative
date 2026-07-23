@@ -21,6 +21,7 @@ from app.config import (
     hosted_mode,
     secret_key,
 )
+from app.root_path import RootPathMiddleware, root_path
 from app.fastapi_fonts import list_google_fonts
 from app.fastapi_intake import (
     approve_campaign,
@@ -51,6 +52,8 @@ logger = logging.getLogger("api")
 
 app = FastAPI(title="Herbie Creative", version="0.1.0")
 
+_ROOT_PATH = root_path()
+
 # Session must be outermost so request.session is available in auth middleware.
 app.add_middleware(
     SessionMiddleware,
@@ -59,6 +62,7 @@ app.add_middleware(
     same_site="lax",
     https_only=hosted_mode(),
     max_age=60 * 60 * 24 * 14,
+    path=_ROOT_PATH or "/",
 )
 app.add_middleware(
     CORSMiddleware,
@@ -67,6 +71,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Outermost: strip /pipeline so routes stay at /health, /campaigns, …
+if _ROOT_PATH:
+    app.add_middleware(RootPathMiddleware, prefix=_ROOT_PATH)
 
 outputs_root = campaigns_base()
 outputs_root.mkdir(parents=True, exist_ok=True)

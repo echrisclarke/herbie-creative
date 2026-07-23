@@ -28,6 +28,13 @@ def hosted_mode() -> bool:
     return os.getenv("HOSTED", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def public_root_path() -> str:
+    """URL prefix such as /pipeline for herbiecreative.com/pipeline. Empty locally."""
+    from app.root_path import root_path
+
+    return root_path()
+
+
 def data_root() -> Path:
     """Persistent volume root (SQLite + campaigns). Defaults beside the project."""
     raw = (os.getenv("DATA_ROOT") or "").strip()

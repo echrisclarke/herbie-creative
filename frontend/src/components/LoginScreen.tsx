@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { login } from '../lib/api'
+import { login, publicUrl } from '../lib/api'
 
 export function LoginScreen({ onSignedIn }: { onSignedIn: () => void }) {
   const [email, setEmail] = useState('')
@@ -31,7 +31,10 @@ export function LoginScreen({ onSignedIn }: { onSignedIn: () => void }) {
 
   return (
     <section className="install-setup" aria-label="Sign in">
-      <div className="install-setup-media" style={{ backgroundImage: 'url(/brand/hero.png)' }} />
+      <div
+        className="install-setup-media"
+        style={{ backgroundImage: `url(${publicUrl('/brand/hero.png')})` }}
+      />
       <div className="install-setup-scrim" />
       <div className="install-setup-panel">
         <h1 className="name-header page-title header-text-style install-setup-brand">

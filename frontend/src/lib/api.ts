@@ -183,10 +183,27 @@ export type FinalizeChoices = {
   product_copy?: Record<string, { message: string; cta: string; supporting?: string }>
 }
 
-const API = import.meta.env.DEV ? '/api' : ''
+/** Public URL prefix when live at herbiecreative.com/pipeline (empty locally). */
+export function publicBase(): string {
+  if (import.meta.env.DEV) return ''
+  if (typeof window === 'undefined') return ''
+  const path = window.location.pathname
+  if (path === '/pipeline' || path.startsWith('/pipeline/')) return '/pipeline'
+  return ''
+}
+
+const API = import.meta.env.DEV ? '/api' : publicBase()
 
 function apiFetch(input: string, init?: RequestInit) {
   return fetch(input, { ...init, credentials: 'include' })
+}
+
+/** Prefix absolute app paths (/brand/…, /outputs/…) for /pipeline hosting. */
+export function publicUrl(path: string): string {
+  const normalized = path.startsWith('/') ? path : `/${path}`
+  if (import.meta.env.DEV) return normalized
+  const base = publicBase()
+  return base ? `${base}${normalized}` : normalized
 }
 
 export type AuthUser = {
@@ -731,14 +748,14 @@ export function outputUrl(path: string) {
   // Repo seed assets are mounted at /sample-assets (not under /outputs/campaigns).
   const sampleIdx = p.toLowerCase().lastIndexOf('sample-assets/')
   if (sampleIdx >= 0) {
-    return `/${p.slice(sampleIdx)}`
+    return publicUrl(`/${p.slice(sampleIdx)}`)
   }
   if (p.toLowerCase().startsWith('sample-assets/')) {
-    return `/${p}`
+    return publicUrl(`/${p}`)
   }
 
-  if (p.startsWith('/')) return p
-  return `/outputs/${p}`
+  if (p.startsWith('/')) return publicUrl(p)
+  return publicUrl(`/outputs/${p}`)
 }
 
 export function subscribeEvents(

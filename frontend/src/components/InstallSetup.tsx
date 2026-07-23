@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getHealth } from '../lib/api'
+import { getHealth, publicUrl } from '../lib/api'
 import { ApiKeysForm } from './ApiKeysForm'
 
 export function InstallSetup({
@@ -35,7 +35,10 @@ export function InstallSetup({
 
   return (
     <section className="install-setup" aria-label="Setup">
-      <div className="install-setup-media" style={{ backgroundImage: 'url(/brand/hero.png)' }} />
+      <div
+        className="install-setup-media"
+        style={{ backgroundImage: `url(${publicUrl('/brand/hero.png')})` }}
+      />
       <div className="install-setup-scrim" />
       <div className="install-setup-panel">
         <h1 className="name-header page-title header-text-style install-setup-brand">

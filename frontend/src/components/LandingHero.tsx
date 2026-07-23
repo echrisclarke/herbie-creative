@@ -1,3 +1,5 @@
+import { publicUrl } from '../lib/api'
+
 const LANDING_KEY = 'herbie-creative-landing-seen'
 
 export function hasSeenLanding(): boolean {
@@ -25,12 +27,14 @@ export function clearLandingSeen(): void {
 }
 
 export function LandingHero({ onEnter }: { onEnter: () => void }) {
+  const heroMp4 = publicUrl('/brand/hero.mp4')
+  const heroPng = publicUrl('/brand/hero.png')
   return (
     <section className="landing-hero" aria-label="Herbie Creative intro">
       <video
         className="landing-hero-media"
-        src="/brand/hero.mp4"
-        poster="/brand/hero.png"
+        src={heroMp4}
+        poster={heroPng}
         autoPlay
         muted
         loop
@@ -39,7 +43,7 @@ export function LandingHero({ onEnter }: { onEnter: () => void }) {
       />
       <img
         className="landing-hero-fallback"
-        src="/brand/hero.png"
+        src={heroPng}
         alt=""
         aria-hidden
       />

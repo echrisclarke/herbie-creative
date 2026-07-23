@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  // Relative assets work at both / (local) and /pipeline/ (live).
+  base: './',
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,

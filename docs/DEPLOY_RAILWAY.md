@@ -1,64 +1,62 @@
-# Deploy Herbie Creative on Railway
+# Deploy Herbie Creative at herbiecreative.com/pipeline
 
-This app is FastAPI + the built React UI. It does **not** run on Bluehost shared PHP hosting. Railway runs the same system. DNS for `herbiecreative.com` is managed in **Squarespace**.
+Live URL: **https://herbiecreative.com/pipeline**
 
-## 1. Push this repo
+The FastAPI app runs on Railway under the `/pipeline` path. Bluehost keeps the main PHP site and reverse-proxies only `/pipeline` to Railway. DNS stays in Squarespace (A record for `@` → Bluehost). Do **not** create a Bluehost `public_html/pipeline` app folder, and do **not** add a Squarespace CNAME for a campaign subdomain.
 
-Commit and push `main` (Dockerfile + `railway.toml` included) to GitHub:
-`echrisclarke/herbie-creative`.
+## 1. Railway
 
-## 2. Railway service
-
-1. Open [Railway](https://railway.app) → your `herbie-creative` project.
-2. Connect the GitHub repo if it is not already connected.
-3. Open the service → **Settings**:
-   - **Builder:** Dockerfile (from `railway.toml`)
-   - Root directory: repo root (where `Dockerfile` lives)
-4. **Variables** (Settings → Variables):
+1. Connect GitHub `echrisclarke/herbie-creative` and deploy (Dockerfile).
+2. **Variables:**
 
 | Variable | Value |
 |---|---|
 | `HOSTED` | `1` |
+| `ROOT_PATH` | `/pipeline` (also set in the Dockerfile) |
 | `DATA_ROOT` | `/data` |
 | `CAMPAIGNS_ROOT` | `/data/campaigns` |
-| `SECRET_KEY` | long random string (session cookies) |
-| `ENCRYPTION_KEY` | long random string (encrypts user API keys) |
-| `BOOTSTRAP_ADMIN_EMAIL` | your email (first admin only) |
-| `BOOTSTRAP_ADMIN_PASSWORD` | strong password (change after first login) |
-| `OPENAI_API_KEY` | **your** key for the 3-run free trial only |
-| `XAI_API_KEY` | optional; trial motion while free runs remain |
-| `TRIAL_RUNS_LIMIT` | `3` (default) |
+| `SECRET_KEY` | long random string |
+| `ENCRYPTION_KEY` | long random string |
+| `BOOTSTRAP_ADMIN_EMAIL` | your email (first admin) |
+| `BOOTSTRAP_ADMIN_PASSWORD` | strong password |
+| `OPENAI_API_KEY` | your key for the 3-run free trial |
+| `XAI_API_KEY` | optional trial motion |
+| `TRIAL_RUNS_LIMIT` | `3` |
 
-After 3 generate runs without their own key, users must paste an OpenAI key in Settings. Your host key is never shown in the UI.
+3. **Volume** at `/data`.
+4. Confirm the Railway URL works at `https://YOUR-APP.up.railway.app/pipeline/`.
 
-5. **Volume:** add a volume mounted at `/data` so campaigns and `app.db` survive redeploys.
-6. Redeploy. Build should use the Dockerfile (not Railpack guessing).
-7. Open the Railway URL → sign in with the bootstrap admin.
+No custom domain on Railway is required if Bluehost proxies `/pipeline`.
 
-## 3. Custom domain DNS (Squarespace, not Bluehost folders)
+## 2. Bluehost reverse proxy
 
-Do **not** create a Bluehost `public_html` subdomain folder for this app. The portfolio stays on Bluehost; the campaign app stays on Railway.
+Edit [`public_html/.htaccess`](../../public_html/.htaccess): uncomment the `mod_proxy` block and set your Railway host:
 
-1. Railway → Custom Domain → add `campaign.herbiecreative.com` (copy the CNAME target).
-2. Squarespace → Domains → DNS → **Custom records** → **Add record**:
-   - Type: **CNAME**
-   - Name: `campaign`
-   - Data: the Railway hostname (for example `something.up.railway.app`)
-3. Save and wait for DNS. HTTPS is handled by Railway.
+```apache
+<IfModule mod_proxy.c>
+  SSLProxyEngine On
+  ProxyPreserveHost Off
+  ProxyPass        /pipeline https://YOUR-APP.up.railway.app/pipeline
+  ProxyPassReverse /pipeline https://YOUR-APP.up.railway.app/pipeline
+</IfModule>
+```
 
-## 4. Invite other users
+Upload via Upload Manager. Then open https://herbiecreative.com/pipeline/
 
-While signed in as the admin, open **Settings → Invite user**. They get their own campaigns and API keys (plus the 3 free trial runs).
+If Apache returns 500 or ignores ProxyPass, shared hosting may block `mod_proxy`. Ask Bluehost support to allow reverse proxy for `/pipeline`, or put Cloudflare in front and route `/pipeline*` to the Railway origin.
 
-## 5. Optional hub link
+## 3. Squarespace DNS
 
-On `herbiecreative.com` (Bluehost `public_html`), add a link to `https://campaign.herbiecreative.com`. No Python upload to Bluehost.
+Leave `@` pointing at Bluehost (`162.241.226.190`). No new CNAME for this app.
 
-## Local vs hosted
+## 4. Invite users
 
-| | Local (`run_app.py`) | Railway (`HOSTED=1`) |
+Admin → Settings → Invite user. Each account gets 3 free generate runs on your host key, then must add their own OpenAI key.
+
+## Local vs live
+
+| | Local (`run_app.py`) | Live |
 |---|---|---|
+| URL | http://127.0.0.1:8000/ | https://herbiecreative.com/pipeline/ |
+| `ROOT_PATH` | unset | `/pipeline` |
 | Login | Not required | Required |
-| API keys | `.env` or `private/api_keys.json` | Per-user encrypted; 3 trial runs on host key |
-| Campaigns | `campaigns/` | `/data/campaigns/<user_id>/` |
-| Reveal folder / Local CLI | Available | Hidden |
