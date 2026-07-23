@@ -197,7 +197,7 @@ export default function App() {
     }
   }
 
-  function requireAccount(reason: 'pipeline' | 'settings' | 'generate' = 'pipeline') {
+  function requireAccount(_reason: 'pipeline' | 'settings' | 'generate' = 'pipeline') {
     if (hosted && !authUser) {
       setForceAuth(true)
       return false
