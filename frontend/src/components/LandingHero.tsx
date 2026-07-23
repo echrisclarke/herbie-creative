@@ -26,13 +26,7 @@ export function clearLandingSeen(): void {
   }
 }
 
-export function LandingHero({
-  onEnter,
-  onViewExamples,
-}: {
-  onEnter: () => void
-  onViewExamples?: () => void
-}) {
+export function LandingHero({ onEnter }: { onEnter: () => void }) {
   const heroMp4 = publicUrl('/brand/hero.mp4')
   const heroPng = publicUrl('/brand/hero.png')
   return (
@@ -59,27 +53,16 @@ export function LandingHero({
           HERBIE CREATIVE
         </h1>
         <p className="landing-hero-line">Campaign Pipeline</p>
-        <div className="landing-hero-cta-row">
-          <button
-            type="button"
-            className="btn landing-hero-cta"
-            onClick={() => {
-              markLandingSeen()
-              onEnter()
-            }}
-          >
-            Get started
-          </button>
-          {onViewExamples && (
-            <button
-              type="button"
-              className="btn-ghost landing-hero-cta"
-              onClick={onViewExamples}
-            >
-              View example creatives
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          className="btn landing-hero-cta"
+          onClick={() => {
+            markLandingSeen()
+            onEnter()
+          }}
+        >
+          Get started
+        </button>
       </div>
     </section>
   )

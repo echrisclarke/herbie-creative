@@ -18,10 +18,12 @@ export function LoginScreen({
   onSignedIn,
   initialMode = 'signin',
   trialMessage,
+  onBack,
 }: {
   onSignedIn: () => void
   initialMode?: Mode
   trialMessage?: string
+  onBack?: () => void
 }) {
   const [mode, setMode] = useState<Mode>(initialMode)
   const [email, setEmail] = useState('')
@@ -146,6 +148,11 @@ export function LoginScreen({
                 ? 'Create account'
                 : 'Sign in'}
           </button>
+          {onBack && (
+            <button type="button" className="btn-ghost" onClick={onBack} disabled={busy}>
+              Back
+            </button>
+          )}
         </form>
       </div>
     </section>

@@ -10,6 +10,10 @@ function mediaUrl(url: string) {
   return publicUrl(url.startsWith('/') ? url : `/${url}`)
 }
 
+function isMotion(item: GalleryCreative) {
+  return item.kind === 'motion' || item.url.toLowerCase().endsWith('.mp4')
+}
+
 export function PublicExamplesGallery({
   onBack,
   onGetStarted,
@@ -37,8 +41,8 @@ export function PublicExamplesGallery({
           <p className="app-subtitle">Campaign Pipeline</p>
           <h1 className="public-examples-title">Example creatives</h1>
           <p className="public-examples-lead">
-            Sample outputs from demo campaigns. Sign up to run your own pipeline and keep a private
-            library.
+            Full sample outputs from demo campaigns, including stills and motion. Sign up to run
+            your own pipeline and keep a private library.
           </p>
         </div>
         <div className="public-examples-actions">
@@ -67,7 +71,7 @@ export function PublicExamplesGallery({
             <h2>{camp.name}</h2>
             <p className="public-examples-meta">
               {camp.brand ? `${camp.brand} · ` : ''}
-              {items.length} still{items.length === 1 ? '' : 's'}
+              {items.length} asset{items.length === 1 ? '' : 's'}
             </p>
             <div className="public-examples-grid">
               {items.map((item) => (
@@ -77,9 +81,29 @@ export function PublicExamplesGallery({
                   className="public-examples-card"
                   onClick={() => setLightbox(item)}
                 >
-                  <img src={mediaUrl(item.url)} alt="" loading="lazy" />
+                  {isMotion(item) ? (
+                    <video
+                      src={mediaUrl(item.url)}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      onLoadedMetadata={(e) => {
+                        const el = e.currentTarget
+                        try {
+                          if (el.duration && Number.isFinite(el.duration)) {
+                            el.currentTime = Math.min(0.15, el.duration * 0.05)
+                          }
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    />
+                  ) : (
+                    <img src={mediaUrl(item.url)} alt="" loading="lazy" />
+                  )}
                   <span>
                     {item.product} · {item.ratio}
+                    {isMotion(item) ? ' · motion' : ''}
                   </span>
                 </button>
               ))}
@@ -104,7 +128,16 @@ export function PublicExamplesGallery({
             aria-label="Example creative"
             onClick={(e) => e.stopPropagation()}
           >
-            <img src={mediaUrl(lightbox.url)} alt="" className="lightbox-media" />
+            {isMotion(lightbox) ? (
+              <video
+                src={mediaUrl(lightbox.url)}
+                controls
+                playsInline
+                className="lightbox-media"
+              />
+            ) : (
+              <img src={mediaUrl(lightbox.url)} alt="" className="lightbox-media" />
+            )}
             <p>
               {lightbox.campaign_name} · {lightbox.product} · {lightbox.ratio}
             </p>

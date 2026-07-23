@@ -15,8 +15,10 @@ import {
   markLandingSeen,
 } from './components/LandingHero'
 import { InstallSetup } from './components/InstallSetup'
+import { AboutPage } from './components/AboutPage'
 import { LoginScreen } from './components/LoginScreen'
 import { PublicExamplesGallery } from './components/PublicExamplesGallery'
+import { WelcomeGate } from './components/WelcomeGate'
 import {
   approveCampaign,
   cleanupEphemeral,
@@ -79,7 +81,9 @@ function mergeMotionPaths(
 export default function App() {
   // First visit: landing once per browser, then InstallSetup until OpenAI key or skip.
   const [showLanding, setShowLanding] = useState(() => !hasSeenLanding())
-  const [showPublicExamples, setShowPublicExamples] = useState(false)
+  const [preAuthView, setPreAuthView] = useState<
+    'welcome' | 'signup' | 'signin' | 'about' | 'examples' | null
+  >(null)
   const [showInstall, setShowInstall] = useState(false)
   const [installSkipped, setInstallSkipped] = useState(false)
   const [healthReady, setHealthReady] = useState(false)
@@ -182,7 +186,10 @@ export default function App() {
   function enterFromLanding() {
     markLandingSeen()
     setShowLanding(false)
-    if (hosted && !authUser) return
+    if (hosted && !authUser) {
+      setPreAuthView('welcome')
+      return
+    }
     if (healthReady && !openaiConfigured && !installSkipped) {
       setShowInstall(true)
     }
@@ -801,44 +808,49 @@ export default function App() {
     )
   }
 
-  if (showPublicExamples && (!hosted || !authUser)) {
-    return (
-      <PublicExamplesGallery
-        onBack={() => {
-          setShowPublicExamples(false)
-          setShowLanding(true)
-        }}
-        onGetStarted={() => {
-          setShowPublicExamples(false)
-          setShowLanding(false)
-          markLandingSeen()
-        }}
-      />
-    )
-  }
-
   if (showLanding) {
-    return (
-      <LandingHero
-        onEnter={enterFromLanding}
-        onViewExamples={() => {
-          setShowPublicExamples(true)
-          setShowLanding(false)
-        }}
-      />
-    )
+    return <LandingHero onEnter={enterFromLanding} />
   }
 
-  // After landing: account required for pipeline, library, and settings.
+  // After Get started: welcome menu, about, examples, then signup/signin.
   if (hosted && !authUser) {
+    const view = preAuthView || 'welcome'
+    if (view === 'about') {
+      return (
+        <AboutPage
+          onBack={() => setPreAuthView('welcome')}
+          onGetStarted={() => setPreAuthView('signup')}
+        />
+      )
+    }
+    if (view === 'examples') {
+      return (
+        <PublicExamplesGallery
+          onBack={() => setPreAuthView('welcome')}
+          onGetStarted={() => setPreAuthView('signup')}
+        />
+      )
+    }
+    if (view === 'signin' || view === 'signup') {
+      return (
+        <LoginScreen
+          initialMode={view}
+          trialMessage="Create a free account to use Campaign Pipeline. You get 3 trial generate runs on the demo key; your library and creatives stay in your account."
+          onBack={() => setPreAuthView('welcome')}
+          onSignedIn={() => {
+            setPreAuthView(null)
+            refreshAuth()
+            refreshHealth()
+          }}
+        />
+      )
+    }
     return (
-      <LoginScreen
-        initialMode="signup"
-        trialMessage="Create a free account to use Campaign Pipeline. You get 3 trial generate runs on the demo key; your library and creatives stay in your account."
-        onSignedIn={() => {
-          refreshAuth()
-          refreshHealth()
-        }}
+      <WelcomeGate
+        onSignUp={() => setPreAuthView('signup')}
+        onSignIn={() => setPreAuthView('signin')}
+        onAbout={() => setPreAuthView('about')}
+        onExamples={() => setPreAuthView('examples')}
       />
     )
   }
