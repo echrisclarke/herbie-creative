@@ -25,8 +25,20 @@ The FastAPI app runs on Railway. DNS for the subdomain is a Squarespace CNAME to
 | `TRIAL_MAX_TOTAL_STILLS` | `18` |
 | `TRIAL_FORCE_QUALITY` | `low` |
 | `TRIAL_GLOBAL_DAILY_RUNS` | `100` |
+| `PUBLIC_APP_URL` | `https://pipeline.herbiecreative.com` |
+| `RESEND_API_KEY` | Resend API key (enables forgot-password emails) |
+| `RESEND_FROM` | optional, e.g. `Campaign Pipeline <noreply@yourdomain.com>` |
 
-Landing is public. Signup is required for pipeline, library, and settings so creatives stay under `campaigns/<user_id>/`. New accounts get 3 host-key generate runs (low quality, still caps), then add their own OpenAI key.
+Landing is public. Guests can browse the app and Library examples. Signup is required to generate. New accounts get 3 host-key generate runs (low quality, still caps), then add their own OpenAI key.
+
+### Password reset
+
+1. Create a free [Resend](https://resend.com) account and API key.
+2. Set `RESEND_API_KEY` (and ideally verify your domain, then set `RESEND_FROM`).
+3. Users use **Forgot password?** on the sign-in screen.
+4. Until Resend is configured, an admin can reset any password under **Settings → Reset user password**.
+
+SSH into Railway is optional ops tooling. It is not required for password reset once Resend (or admin reset) is in place.
 
 3. **Volume** at `/data`.
 4. Confirm the default Railway URL works at the **root**:  

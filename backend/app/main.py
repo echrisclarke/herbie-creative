@@ -96,6 +96,8 @@ def _requires_auth(path: str) -> bool:
         "/auth/login",
         "/auth/signup",
         "/auth/me",
+        "/auth/forgot-password",
+        "/auth/reset-password",
         "/favicon.ico",
         "/public-gallery",
         "/gallery",
@@ -217,6 +219,8 @@ def _startup_hosted() -> None:
 
 @app.get("/health")
 def health(request: Request) -> dict:
+    from app.mail import resend_configured
+
     openai_ok = bool(get_openai_api_key())
     xai_ok = bool(get_xai_api_key())
     google_ok = bool(get_google_fonts_api_key())
@@ -253,6 +257,7 @@ def health(request: Request) -> dict:
         "google_fonts_catalog": google_ok,
         "trial": trial_info,
         "auth_required": auth_required,
+        "password_reset_email": resend_configured(),
     }
 
 
@@ -326,6 +331,58 @@ async def auth_me(request: Request) -> dict:
     }
 
 
+@app.post("/auth/forgot-password")
+async def auth_forgot_password(body: dict) -> dict:
+    """Start email reset. Always returns ok so addresses cannot be probed."""
+    from app.auth_store import create_password_reset_token, init_db
+    from app.mail import public_app_url, resend_configured, send_password_reset_email
+
+    if not hosted_mode():
+        raise HTTPException(status_code=400, detail="Only available online")
+    init_db()
+    email = str(body.get("email") or "").strip().lower()
+    token = create_password_reset_token(email) if email and "@" in email else None
+    email_sent = False
+    if token:
+        reset_url = f"{public_app_url()}/?reset_token={token}"
+        email_sent = send_password_reset_email(to_email=email, reset_url=reset_url)
+    return {
+        "ok": True,
+        "email_configured": resend_configured(),
+        # Only report send status generically; never confirm whether the email exists.
+        "message": (
+            "If that account exists, we sent a reset link."
+            if resend_configured()
+            else "Email reset is not configured yet. An admin can set a new password in Settings."
+        ),
+        "email_sent": email_sent if resend_configured() else False,
+    }
+
+
+@app.post("/auth/reset-password")
+async def auth_reset_password(request: Request, body: dict) -> dict:
+    """Finish reset with token from the email link."""
+    from app.auth_store import consume_password_reset_token, init_db
+
+    if not hosted_mode():
+        raise HTTPException(status_code=400, detail="Only available online")
+    init_db()
+    try:
+        user = consume_password_reset_token(
+            str(body.get("token") or ""),
+            str(body.get("password") or ""),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    request.session["user_id"] = user.id
+    request.session["email"] = user.email
+    return {
+        "ok": True,
+        "hosted": True,
+        "user": {"id": user.id, "email": user.email, "is_admin": user.is_admin},
+    }
+
+
 @app.post("/auth/users")
 async def auth_create_user(request: Request, body: dict) -> dict:
     """Invite-only: admins create accounts for others."""
@@ -344,6 +401,28 @@ async def auth_create_user(request: Request, body: dict) -> dict:
             str(body.get("password") or ""),
             is_admin=bool(body.get("is_admin")),
         )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "ok": True,
+        "user": {"id": user.id, "email": user.email, "is_admin": user.is_admin},
+    }
+
+
+@app.post("/auth/users/reset-password")
+async def auth_admin_reset_password(request: Request, body: dict) -> dict:
+    """Admin sets a new password for any account (fallback when email reset is off)."""
+    from app.auth_store import get_user_by_id, init_db, set_password
+
+    if not hosted_mode():
+        raise HTTPException(status_code=400, detail="Only available in hosted mode")
+    init_db()
+    uid = request.session.get("user_id")
+    admin = get_user_by_id(str(uid)) if uid else None
+    if not admin or not admin.is_admin:
+        raise HTTPException(status_code=403, detail="Admin only")
+    try:
+        user = set_password(str(body.get("email") or ""), str(body.get("password") or ""))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {

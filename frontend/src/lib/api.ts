@@ -266,6 +266,45 @@ export async function createInvitedUser(body: {
   return res.json() as Promise<{ ok: boolean; user: AuthUser }>
 }
 
+export async function forgotPassword(email: string) {
+  const res = await apiFetch(`${API}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<{
+    ok: boolean
+    email_configured: boolean
+    message: string
+    email_sent: boolean
+  }>
+}
+
+export async function resetPassword(token: string, password: string) {
+  const res = await apiFetch(`${API}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<{
+    ok: boolean
+    hosted: boolean
+    user: AuthUser | null
+  }>
+}
+
+export async function adminResetUserPassword(email: string, password: string) {
+  const res = await apiFetch(`${API}/auth/users/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<{ ok: boolean; user: AuthUser }>
+}
+
 export type KeyStatus = {
   configured: boolean
   source: string | null

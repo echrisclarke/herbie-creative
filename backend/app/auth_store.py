@@ -65,6 +65,13 @@ def init_db() -> None:
                 day TEXT PRIMARY KEY,
                 runs_used INTEGER NOT NULL DEFAULT 0
             );
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                token_hash TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                used_at TEXT
+            );
             """
         )
         cols = {
@@ -205,6 +212,69 @@ def set_password(email: str, password: str) -> UserRecord:
         )
     return UserRecord(
         id=row["id"],
+        email=row["email"],
+        is_admin=bool(row["is_admin"]),
+        created_at=row["created_at"],
+    )
+
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def create_password_reset_token(email: str, *, ttl_seconds: int = 3600) -> str | None:
+    """Create a one-time reset token. Returns the raw token, or None if no such user."""
+    row = get_user_by_email(email)
+    if not row:
+        return None
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    expires = datetime.fromtimestamp(now.timestamp() + max(60, ttl_seconds), tz=timezone.utc)
+    with _connect() as conn:
+        conn.execute(
+            "DELETE FROM password_reset_tokens WHERE user_id = ? OR expires_at < ?",
+            (row["id"], now.isoformat()),
+        )
+        conn.execute(
+            """
+            INSERT INTO password_reset_tokens (token_hash, user_id, expires_at, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (_token_hash(token), row["id"], expires.isoformat(), now.isoformat()),
+        )
+    return token
+
+
+def consume_password_reset_token(token: str, new_password: str) -> UserRecord:
+    """Validate token, set password, mark token used."""
+    if len(new_password) < 8:
+        raise ValueError("Password must be at least 8 characters")
+    raw = (token or "").strip()
+    if not raw:
+        raise ValueError("Reset link is invalid or expired")
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        row = conn.execute(
+            """
+            SELECT t.token_hash, t.user_id, t.expires_at, t.used_at, u.email, u.is_admin, u.created_at
+            FROM password_reset_tokens t
+            JOIN users u ON u.id = t.user_id
+            WHERE t.token_hash = ?
+            """,
+            (_token_hash(raw),),
+        ).fetchone()
+        if not row or row["used_at"] or str(row["expires_at"]) < now:
+            raise ValueError("Reset link is invalid or expired")
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (_hash_password(new_password), row["user_id"]),
+        )
+        conn.execute(
+            "UPDATE password_reset_tokens SET used_at = ? WHERE token_hash = ?",
+            (now, row["token_hash"]),
+        )
+    return UserRecord(
+        id=row["user_id"],
         email=row["email"],
         is_admin=bool(row["is_admin"]),
         created_at=row["created_at"],

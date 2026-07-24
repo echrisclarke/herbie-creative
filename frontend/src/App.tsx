@@ -81,6 +81,14 @@ export default function App() {
   // First visit: landing once per browser, then app browse / InstallSetup as needed.
   const [showLanding, setShowLanding] = useState(() => !hasSeenLanding())
   const [authOverlay, setAuthOverlay] = useState<AuthOverlay>(null)
+  const [resetToken, setResetToken] = useState<string | null>(() => {
+    try {
+      const token = new URLSearchParams(window.location.search).get('reset_token')
+      return token?.trim() || null
+    } catch {
+      return null
+    }
+  })
   const [showInstall, setShowInstall] = useState(false)
   const [installSkipped, setInstallSkipped] = useState(false)
   const [healthReady, setHealthReady] = useState(false)
@@ -154,6 +162,13 @@ export default function App() {
     refreshHealth()
     refreshAuth()
   }, [])
+
+  useEffect(() => {
+    if (!resetToken) return
+    markLandingSeen()
+    setShowLanding(false)
+    setAuthOverlay('signin')
+  }, [resetToken])
 
   const accountTrialActive =
     hosted &&
@@ -821,9 +836,22 @@ export default function App() {
       <LoginScreen
         initialMode={authOverlay}
         trialMessage="Create an account to run campaigns. New accounts get 3 trial generates."
-        onBack={() => setAuthOverlay(null)}
+        resetToken={resetToken}
+        onBack={() => {
+          setAuthOverlay(null)
+          if (resetToken) {
+            setResetToken(null)
+            const url = new URL(window.location.href)
+            url.searchParams.delete('reset_token')
+            window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+          }
+        }}
         onSignedIn={() => {
           setAuthOverlay(null)
+          setResetToken(null)
+          const url = new URL(window.location.href)
+          url.searchParams.delete('reset_token')
+          window.history.replaceState({}, '', url.pathname + url.search + url.hash)
           setTab('library')
           refreshAuth()
           refreshHealth()

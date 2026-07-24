@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  adminResetUserPassword,
   createInvitedUser,
   fetchSettingsKeys,
   type AuthUser,
@@ -22,6 +23,11 @@ export function SettingsPanel({
   const [inviteMsg, setInviteMsg] = useState<string | null>(null)
   const [inviteErr, setInviteErr] = useState<string | null>(null)
   const [inviteBusy, setInviteBusy] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetPassword, setResetPassword] = useState('')
+  const [resetMsg, setResetMsg] = useState<string | null>(null)
+  const [resetErr, setResetErr] = useState<string | null>(null)
+  const [resetBusy, setResetBusy] = useState(false)
   const [trial, setTrial] = useState<TrialStatus | null>(null)
 
   useEffect(() => {
@@ -108,6 +114,59 @@ export function SettingsPanel({
             )}
             <button type="submit" className="btn" disabled={inviteBusy}>
               {inviteBusy ? 'Creating…' : 'Create account'}
+            </button>
+          </form>
+
+          <h3 style={{ marginTop: '2rem' }}>Reset user password</h3>
+          <p style={{ color: 'var(--muted)' }}>
+            Set a new password for any account. Use this if email reset is not set up yet.
+          </p>
+          <form
+            className="login-form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              setResetBusy(true)
+              setResetMsg(null)
+              setResetErr(null)
+              void adminResetUserPassword(resetEmail.trim(), resetPassword)
+                .then((r) => {
+                  setResetMsg(`Updated password for ${r.user.email}`)
+                  setResetEmail('')
+                  setResetPassword('')
+                })
+                .catch((err) => {
+                  setResetErr(formatApiError(err, 'Could not reset that password.'))
+                })
+                .finally(() => setResetBusy(false))
+            }}
+          >
+            <label className="field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+              />
+            </label>
+            <label className="field">
+              <span>New password</span>
+              <input
+                type="password"
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                required
+                minLength={8}
+              />
+            </label>
+            {resetMsg && <p className="banner">{resetMsg}</p>}
+            {resetErr && (
+              <p className="form-error" role="alert">
+                {resetErr}
+              </p>
+            )}
+            <button type="submit" className="btn" disabled={resetBusy}>
+              {resetBusy ? 'Saving…' : 'Reset password'}
             </button>
           </form>
         </div>
