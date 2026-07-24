@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   adaptLocalizeCopy,
   getProductSeeds,
-  outputUrl,
+  outputThumbUrl,
   retryProductSeeds,
   saveCampaign,
   saveDraft,
@@ -1020,7 +1020,12 @@ export function ReviewStep({
                               })
                             }
                           />
-                          <img src={outputUrl(path)} alt="" />
+                          <img
+                            src={outputThumbUrl(path, 240)}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                          />
                           <span>{fileLabel(path)}</span>
                         </label>
                       )

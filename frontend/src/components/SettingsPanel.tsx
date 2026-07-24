@@ -5,6 +5,7 @@ import {
   type AuthUser,
   type TrialStatus,
 } from '../lib/api'
+import { formatApiError } from '../lib/errors'
 import { ApiKeysForm } from './ApiKeysForm'
 
 export function SettingsPanel({
@@ -39,10 +40,10 @@ export function SettingsPanel({
           : 'Enter your own OpenAI, Grok, and Google Fonts keys. They are stored locally and never shipped with a public build.'}
       </p>
       {hosted && trial?.mode === 'account' && !trial.has_own_openai && (
-        <p className="banner" style={{ marginTop: '0.75rem' }}>
+        <p className="trial-note" style={{ marginTop: '0.75rem' }}>
           {trial.can_use_host_openai
-            ? `Free trial active: ${trial.remaining ?? 0} of ${trial.limit ?? 3} generate runs left on the demo key. Add your own OpenAI key anytime.`
-            : 'Free trial finished. Add your own OpenAI API key to keep generating. Creatives already made stay in your account.'}
+            ? `Trial · ${trial.remaining ?? 0} of ${trial.limit ?? 3} generate runs left on the demo key. Add your own OpenAI key anytime.`
+            : 'Trial finished. Add your own OpenAI key to keep generating. Existing creatives stay in your account.'}
         </p>
       )}
       {authUser && (
@@ -75,13 +76,7 @@ export function SettingsPanel({
                   setInvitePassword('')
                 })
                 .catch((err) => {
-                  const raw = err instanceof Error ? err.message : String(err)
-                  try {
-                    const parsed = JSON.parse(raw) as { detail?: string }
-                    setInviteErr(parsed.detail || raw)
-                  } catch {
-                    setInviteErr(raw)
-                  }
+                  setInviteErr(formatApiError(err, 'Could not create that account.'))
                 })
                 .finally(() => setInviteBusy(false))
             }}
@@ -107,7 +102,7 @@ export function SettingsPanel({
             </label>
             {inviteMsg && <p className="banner">{inviteMsg}</p>}
             {inviteErr && (
-              <p className="install-setup-hint" role="alert">
+              <p className="form-error" role="alert">
                 {inviteErr}
               </p>
             )}

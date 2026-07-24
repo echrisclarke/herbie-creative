@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CreativeResult, Report } from '../lib/api'
-import { deleteCreatives, fetchReport, outputUrl } from '../lib/api'
+import { deleteCreatives, fetchReport, outputThumbUrl, outputUrl } from '../lib/api'
 import { cssAspectRatio } from '../lib/aspectExamples'
 import type { CreativePlan } from '../lib/creativeCounts'
 import type { MotionJob } from '../lib/motionJobs'
@@ -326,8 +326,10 @@ export function ResultsStep({
                 }}
               >
                 <img
-                  src={outputUrl(path)}
+                  src={outputThumbUrl(path, 360)}
                   alt={`${tile.product} ${tile.ratio}`}
+                  loading="lazy"
+                  decoding="async"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
@@ -463,8 +465,10 @@ export function ResultsStep({
               <PlayOverlayThumb src={outputUrl(tile.mediaPath)} />
             ) : (
               <img
-                src={outputUrl(tile.mediaPath)}
+                src={outputThumbUrl(tile.mediaPath, 480)}
                 alt={`${tile.product} ${tile.ratio}`}
+                loading="lazy"
+                decoding="async"
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
             )}
@@ -576,8 +580,10 @@ export function ResultsStep({
                     }}
                   >
                     <img
-                      src={outputUrl(job.sourcePath)}
+                      src={outputThumbUrl(job.sourcePath, 360)}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       style={{
                         width: '100%',
                         height: '100%',

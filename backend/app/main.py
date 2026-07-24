@@ -98,16 +98,17 @@ def _requires_auth(path: str) -> bool:
         "/auth/me",
         "/favicon.ico",
         "/public-gallery",
+        "/gallery",
+        "/samples",
+        "/thumb",
     }:
         return False
     if path.startswith(_PUBLIC_PREFIXES):
         return False
     protected_prefixes = (
         "/settings/",
-        "/gallery",
         "/campaigns",
         "/creatives",
-        "/samples",
         "/tools/",
         "/fonts/",
         "/events",
@@ -116,8 +117,6 @@ def _requires_auth(path: str) -> bool:
         "/auth/users",
     )
     if path.startswith(protected_prefixes) or path in {
-        "/gallery",
-        "/samples",
         "/auth/logout",
     }:
         return True
@@ -133,13 +132,17 @@ def _job_tenant_kwargs() -> dict:
 
 
 class TenantAuthMiddleware(BaseHTTPMiddleware):
-    """Signed-in accounts only for pipeline, library, and settings."""
+    """Hosted: attach tenant when signed in; require auth only on protected routes.
+
+    Browse mode: guests may hit /gallery and /samples (examples + sample briefs).
+    Generate, campaigns, settings keys, and private /outputs stay signed-in only.
+    """
 
     async def dispatch(self, request: Request, call_next):
-        path = _app_path(request.url.path)
-        if not hosted_mode() or not _requires_auth(path):
+        if not hosted_mode():
             return await call_next(request)
 
+        path = _app_path(request.url.path)
         from app.auth_store import get_user_by_id, init_db, load_user_keys
         from app.trial import trial_status
 
@@ -149,7 +152,9 @@ class TenantAuthMiddleware(BaseHTTPMiddleware):
             user = get_user_by_id(str(uid))
             if not user:
                 request.session.clear()
-                return JSONResponse({"detail": "Sign in required"}, status_code=401)
+                if _requires_auth(path):
+                    return JSONResponse({"detail": "Sign in required"}, status_code=401)
+                return await call_next(request)
             keys = load_user_keys(user.id)
             tokens = set_tenant(user_id=user.id, email=user.email, api_keys=keys)
             try:
@@ -157,6 +162,9 @@ class TenantAuthMiddleware(BaseHTTPMiddleware):
                 return await call_next(request)
             finally:
                 reset_tenant(tokens)
+
+        if not _requires_auth(path):
+            return await call_next(request)
 
         return JSONResponse(
             {
@@ -375,42 +383,91 @@ def public_gallery() -> dict:
     return list_public_examples()
 
 
+@app.get("/thumb")
+def media_thumb(request: Request, src: str, w: int = 480) -> FileResponse:
+    """Serve a small WebP preview so grids do not download full creatives."""
+    from app.thumbs import clamp_edge, ensure_thumb, is_public_src, resolve_source
+
+    try:
+        user_id = None
+        if hosted_mode() and not is_public_src(src):
+            user_id = request.session.get("user_id")
+            if not user_id:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Sign in required",
+                    headers={"Cache-Control": "no-store"},
+                )
+            user_id = str(user_id)
+        source = resolve_source(src, user_id=user_id)
+        cached = ensure_thumb(source, clamp_edge(w))
+    except HTTPException:
+        raise
+    except PermissionError as exc:
+        raise HTTPException(status_code=401, detail=str(exc) or "Sign in required") from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc) or "Image not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail=f"Could not build thumbnail: {exc}") from exc
+
+    return FileResponse(
+        cached,
+        media_type="image/webp",
+        headers={
+            "Cache-Control": "public, max-age=604800, immutable",
+        },
+    )
+
+
+def _filter_gallery(
+    payload: dict,
+    *,
+    campaign_id: str | None,
+    ratio: str | None,
+    brand: str | None,
+    kind: str | None,
+) -> dict:
+    creatives = list(payload.get("creatives") or [])
+    if campaign_id:
+        creatives = [c for c in creatives if c.get("campaign_id") == campaign_id]
+    if ratio:
+        creatives = [c for c in creatives if c.get("ratio") == ratio]
+    if brand:
+        creatives = [c for c in creatives if c.get("brand") == brand]
+    if kind:
+        creatives = [c for c in creatives if c.get("kind") == kind]
+    campaigns = list(payload.get("campaigns") or [])
+    if campaign_id:
+        campaigns = [c for c in campaigns if c.get("id") == campaign_id]
+    return {
+        **payload,
+        "campaigns": campaigns,
+        "creatives": creatives,
+    }
+
+
 @app.get("/gallery")
 def gallery(
+    request: Request,
     campaign_id: str | None = None,
     ratio: str | None = None,
     brand: str | None = None,
     kind: str | None = None,
 ) -> dict:
-    private = list_gallery(campaign_id=campaign_id, ratio=ratio, brand=brand, kind=kind)
-    # Signed-in library also shows the shipped public examples at the top.
+    """Guests: curated examples only. Signed-in: private library only (no examples mix)."""
     from app.public_examples import list_public_examples
 
-    public = list_public_examples()
-    if not campaign_id and not brand and not kind:
-        creatives = list(public.get("creatives") or []) + list(private.get("creatives") or [])
-        campaigns = list(public.get("campaigns") or []) + list(private.get("campaigns") or [])
-        filters = private.get("filters") or {}
-        pub_filters = public.get("filters") or {}
-        return {
-            **private,
-            "campaigns": campaigns,
-            "creatives": creatives,
-            "filters": {
-                "ratios": sorted(
-                    set(filters.get("ratios") or []) | set(pub_filters.get("ratios") or [])
-                ),
-                "brands": sorted(
-                    set(filters.get("brands") or []) | set(pub_filters.get("brands") or [])
-                ),
-                "campaigns": list(pub_filters.get("campaigns") or [])
-                + list(filters.get("campaigns") or []),
-                "kinds": sorted(
-                    set(filters.get("kinds") or []) | set(pub_filters.get("kinds") or [])
-                ),
-            },
-        }
-    return private
+    if hosted_mode() and not request.session.get("user_id"):
+        return _filter_gallery(
+            list_public_examples(),
+            campaign_id=campaign_id,
+            ratio=ratio,
+            brand=brand,
+            kind=kind,
+        )
+    return list_gallery(campaign_id=campaign_id, ratio=ratio, brand=brand, kind=kind)
 
 
 @app.get("/campaigns")

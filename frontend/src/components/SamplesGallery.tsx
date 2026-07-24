@@ -9,10 +9,12 @@ import {
   outputUrl,
   publicUrl,
   revealCampaignFolder,
+  thumbUrl,
   type GalleryCreative,
   type GalleryResponse,
   type PastCampaign,
 } from '../lib/api'
+import { formatApiError } from '../lib/errors'
 
 function formatWhen(iso: string | null) {
   if (!iso) return ''
@@ -76,9 +78,14 @@ type LibraryView = 'campaigns' | 'gallery'
 export function SamplesGallery({
   onOpenCampaign,
   desktopTools = true,
+  guestMode = false,
+  onSignUp,
 }: {
   onOpenCampaign?: (campaignId: string) => void | Promise<void>
   desktopTools?: boolean
+  /** Logged-out hosted browse: public examples only, no private campaigns. */
+  guestMode?: boolean
+  onSignUp?: () => void
 }) {
   const [view, setView] = useState<LibraryView>('gallery')
   const [data, setData] = useState<GalleryResponse | null>(null)
@@ -120,6 +127,11 @@ export function SamplesGallery({
   }
 
   useEffect(() => {
+    if (guestMode) {
+      setView('gallery')
+      setPast([])
+      return
+    }
     void refreshPast()
     const onFocus = () => void refreshPast()
     const onVis = () => {
@@ -135,7 +147,7 @@ export function SamplesGallery({
       document.removeEventListener('visibilitychange', onVis)
       window.clearInterval(timer)
     }
-  }, [view])
+  }, [view, guestMode])
 
   useEffect(() => {
     if (view !== 'gallery') return
@@ -155,7 +167,7 @@ export function SamplesGallery({
           setError(null)
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err))
+        if (!cancelled) setError(formatApiError(err, 'Could not load gallery.'))
       } finally {
         if (!cancelled && showSpinner) setLoading(false)
       }
@@ -185,21 +197,15 @@ export function SamplesGallery({
   const campaignOptions = data?.filters.campaigns || data?.campaigns || []
   const hasMotionAnywhere = (data?.filters.kinds || []).includes('motion')
 
-  const byRatio = useMemo(() => {
-    const map = new Map<string, GalleryCreative[]>()
-    for (const c of creatives) {
-      const key = c.ratio || 'unknown'
-      const list = map.get(key) || []
-      list.push(c)
-      map.set(key, list)
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([key, items]) => [
-        key,
-        [...items].sort((a, b) => Number(isMotionItem(b)) - Number(isMotionItem(a))),
-      ] as [string, GalleryCreative[]])
-  }, [creatives])
+  const gridItems = useMemo(
+    () =>
+      [...creatives].sort((a, b) => {
+        const motionDelta = Number(isMotionItem(b)) - Number(isMotionItem(a))
+        if (motionDelta) return motionDelta
+        return (a.product || '').localeCompare(b.product || '')
+      }),
+    [creatives],
+  )
 
   const motionCount = useMemo(
     () => creatives.filter((c) => isMotionItem(c)).length,
@@ -255,7 +261,7 @@ export function SamplesGallery({
       setData(res)
       await refreshPast()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(formatApiError(err, 'Could not delete those creatives.'))
     } finally {
       setDeleteBusy(false)
     }
@@ -268,7 +274,7 @@ export function SamplesGallery({
     try {
       await onOpenCampaign(id)
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(formatApiError(err, 'Could not open that campaign.'))
     } finally {
       setOpeningId(null)
     }
@@ -299,7 +305,7 @@ export function SamplesGallery({
         filename: motionUrl.split('/').pop() || 'creative.mp4',
       })
     } catch (err) {
-      setLightboxMotionError(err instanceof Error ? err.message : String(err))
+      setLightboxMotionError(formatApiError(err, 'Could not generate motion.'))
     } finally {
       setLightboxMotionBusy(false)
     }
@@ -324,15 +330,7 @@ export function SamplesGallery({
           : prev,
       )
     } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err)
-      let message = raw
-      try {
-        const parsed = JSON.parse(raw) as { detail?: string }
-        if (parsed.detail) message = parsed.detail
-      } catch {
-        /* keep raw */
-      }
-      setError(message)
+      setError(formatApiError(err, 'Could not delete that campaign.'))
     } finally {
       setDeletingId(null)
     }
@@ -343,15 +341,7 @@ export function SamplesGallery({
     try {
       await revealCampaignFolder(id)
     } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err)
-      let message = raw
-      try {
-        const parsed = JSON.parse(raw) as { detail?: string }
-        if (parsed.detail) message = parsed.detail
-      } catch {
-        /* keep raw */
-      }
-      setError(message)
+      setError(formatApiError(err, 'Could not open that folder.'))
     }
   }
 
@@ -365,26 +355,45 @@ export function SamplesGallery({
 
   return (
     <div className="samples-gallery">
-      <nav className="library-subtabs" aria-label="Library">
-        <button
-          type="button"
-          className={view === 'campaigns' ? 'app-tab active' : 'app-tab'}
-          onClick={() => setView('campaigns')}
-        >
-          Campaigns
-        </button>
-        <button
-          type="button"
-          className={view === 'gallery' ? 'app-tab active' : 'app-tab'}
-          onClick={() => setView('gallery')}
-        >
-          Gallery
-        </button>
-      </nav>
+      {!guestMode && (
+        <nav className="library-subtabs" aria-label="Library">
+          <button
+            type="button"
+            className={view === 'campaigns' ? 'app-tab active' : 'app-tab'}
+            onClick={() => setView('campaigns')}
+          >
+            Campaigns
+          </button>
+          <button
+            type="button"
+            className={view === 'gallery' ? 'app-tab active' : 'app-tab'}
+            onClick={() => setView('gallery')}
+          >
+            Gallery
+          </button>
+        </nav>
+      )}
+
+      {guestMode && (
+        <div className="library-guest-lead panel">
+          <div>
+            <h2 style={{ margin: '0 0 0.35rem' }}>Examples</h2>
+            <p style={{ margin: 0, color: 'var(--muted)' }}>
+              Demo campaign outputs you can browse before signing up. After you create an account,
+              Library shows only your private runs.
+            </p>
+          </div>
+          {onSignUp && (
+            <button type="button" className="btn" onClick={onSignUp}>
+              Sign up for free trial
+            </button>
+          )}
+        </div>
+      )}
 
       {error && <div className="banner banner-danger">{error}</div>}
 
-      {view === 'campaigns' && (
+      {!guestMode && view === 'campaigns' && (
         <div className="panel">
           <div className="library-panel-head">
             <h2>Campaigns</h2>
@@ -413,7 +422,12 @@ export function SamplesGallery({
                 <div key={c.id} className="past-campaign-row">
                   <div className="past-campaign-thumb">
                     {c.thumb_url ? (
-                      <img src={galleryMediaUrl(c.thumb_url)} alt="" loading="lazy" />
+                      <img
+                        src={thumbUrl(c.thumb_url, 240)}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
                     ) : (
                       <div className="past-campaign-placeholder" />
                     )}
@@ -472,46 +486,48 @@ export function SamplesGallery({
         </div>
       )}
 
-      {view === 'gallery' && (
+      {(guestMode || view === 'gallery') && (
         <>
           <div className="panel" style={{ marginBottom: '1rem' }}>
             <div className="library-panel-head">
-              <h2 style={{ margin: 0 }}>Gallery</h2>
-              <div className="action-row">
-                <button
-                  type="button"
-                  className="btn-ghost"
-                  onClick={() => {
-                    setSelectMode((v) => !v)
-                    clearGallerySelection()
-                  }}
-                >
-                  {selectMode ? 'Done selecting' : 'Select'}
-                </button>
-                {selectMode && (
-                  <>
-                    <button type="button" className="btn-ghost" onClick={selectAllGallery}>
-                      Select all
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-ghost"
-                      disabled={!selectedKeys.size}
-                      onClick={clearGallerySelection}
-                    >
-                      Clear
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      disabled={deleteBusy || !selectedKeys.size}
-                      onClick={() => void handleDeleteSelectedCreatives()}
-                    >
-                      {deleteBusy ? 'Deleting…' : `Delete (${selectedKeys.size})`}
-                    </button>
-                  </>
-                )}
-              </div>
+              <h2 style={{ margin: 0 }}>{guestMode ? 'Browse' : 'Gallery'}</h2>
+              {!guestMode && (
+                <div className="action-row">
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => {
+                      setSelectMode((v) => !v)
+                      clearGallerySelection()
+                    }}
+                  >
+                    {selectMode ? 'Done selecting' : 'Select'}
+                  </button>
+                  {selectMode && (
+                    <>
+                      <button type="button" className="btn-ghost" onClick={selectAllGallery}>
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-ghost"
+                        disabled={!selectedKeys.size}
+                        onClick={clearGallerySelection}
+                      >
+                        Clear
+                      </button>
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={deleteBusy || !selectedKeys.size}
+                        onClick={() => void handleDeleteSelectedCreatives()}
+                      >
+                        {deleteBusy ? 'Deleting…' : `Delete (${selectedKeys.size})`}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             <div className="gallery-filters gallery-filters-4">
               <label>
@@ -570,7 +586,7 @@ export function SamplesGallery({
             )}
           </div>
 
-          {loading && <p style={{ color: 'var(--muted)' }}>Loading gallery…</p>}
+          {loading && <p className="muted-line">Loading gallery…</p>}
           {!loading && creatives.length === 0 && (
             <div className="panel">
               <p style={{ margin: 0, color: 'var(--muted)' }}>
@@ -579,87 +595,84 @@ export function SamplesGallery({
             </div>
           )}
 
-          {byRatio.map(([ratioLabel, items]) => (
-            <section key={ratioLabel} className="gallery-ratio-section">
-              <h3>
-                {ratioLabel} <span className="gallery-count">{items.length}</span>
-              </h3>
-              <div className="gallery-grid">
-                {items.map((item, idx) => {
-                  const motion = isMotionItem(item)
-                  const key = galleryItemKey(item)
-                  const checked = selectedKeys.has(key)
-                  return (
-                    <div
-                      key={`${key}-${idx}`}
-                      className={`gallery-card-wrap${checked ? ' is-selected' : ''}`}
-                    >
-                      {selectMode && (
-                        <label
-                          className="results-select-check"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleGallerySelected(item)}
-                            aria-label={`Select ${item.product}`}
-                          />
-                        </label>
-                      )}
-                      <button
-                        type="button"
-                        className="gallery-card"
-                        onClick={() => {
-                          if (selectMode) {
-                            toggleGallerySelected(item)
-                            return
-                          }
-                          setLightbox(item)
-                        }}
+          {!loading && gridItems.length > 0 && (
+            <div className="social-grid social-grid-library" aria-label="Gallery creatives">
+              {gridItems.map((item, idx) => {
+                const motion = isMotionItem(item)
+                const key = galleryItemKey(item)
+                const checked = selectedKeys.has(key)
+                return (
+                  <div
+                    key={`${key}-${idx}`}
+                    className={`social-grid-wrap${checked ? ' is-selected' : ''}`}
+                  >
+                    {!guestMode && selectMode && (
+                      <label
+                        className="results-select-check"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <div className={`gallery-thumb ratio-${ratioLabel.replace(':', 'x')}`}>
-                          {motion ? (
-                            <MotionThumb src={galleryMediaUrl(item.url)} />
-                          ) : (
-                            <img
-                              src={galleryMediaUrl(item.url)}
-                              alt={`${item.campaign_name} ${item.product}`}
-                              loading="lazy"
-                            />
-                          )}
-                          {motion && <span className="motion-badge">Motion · play</span>}
-                        </div>
-                        <div className="gallery-meta">
-                          <strong>{item.product}</strong>
-                          <span>
-                            {item.brand || item.campaign_name} · {item.ratio}
-                          </span>
-                        </div>
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          ))}
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleGallerySelected(item)}
+                          aria-label={`Select ${item.product}`}
+                        />
+                      </label>
+                    )}
+                    <button
+                      type="button"
+                      className="social-grid-cell"
+                      onClick={() => {
+                        if (!guestMode && selectMode) {
+                          toggleGallerySelected(item)
+                          return
+                        }
+                        setLightbox(item)
+                      }}
+                      aria-label={`${item.product} ${item.ratio}${motion ? ' motion' : ''}`}
+                    >
+                      {motion ? (
+                        <MotionThumb src={galleryMediaUrl(item.url)} />
+                      ) : (
+                        <img
+                          src={thumbUrl(item.url, 480)}
+                          alt={`${item.campaign_name} ${item.product}`}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
+                      {motion && <span className="social-grid-badge">Motion</span>}
+                      <span className="social-grid-caption">
+                        {item.product} · {item.ratio}
+                      </span>
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </>
       )}
 
       {lightbox && (
-        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setLightbox(null)}>
+        <div
+          className="lightbox lightbox-enter"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLightbox(null)}
+        >
           <div className="lightbox-inner" onClick={(e) => e.stopPropagation()}>
             <div className="lightbox-head">
               <div>
                 <strong>{lightbox.product}</strong>
-                <div style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
+                <div className="lightbox-sub">
                   {lightbox.campaign_name}
                   {lightbox.brand ? ` · ${lightbox.brand}` : ''} · {lightbox.ratio}
                   {isMotionItem(lightbox) ? ' · motion' : ''}
                 </div>
               </div>
               <div className="action-row">
-                {onOpenCampaign && (
+                {!guestMode && onOpenCampaign && (
                   <button
                     type="button"
                     className="btn"
@@ -699,7 +712,7 @@ export function SamplesGallery({
               >
                 {isMotionItem(lightbox) ? 'Open / download video' : 'Open full size'}
               </a>
-              {!isMotionItem(lightbox) && motionAvailable && (
+              {!guestMode && !isMotionItem(lightbox) && motionAvailable && (
                 <button
                   type="button"
                   className="btn"

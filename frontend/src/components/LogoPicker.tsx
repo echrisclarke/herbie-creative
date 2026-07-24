@@ -1,5 +1,5 @@
 import type { BrandNotes } from '../lib/api'
-import { outputUrl } from '../lib/api'
+import { outputThumbUrl } from '../lib/api'
 
 export function logoCandidates(notes: BrandNotes): string[] {
   const listed = (notes.logo_paths || []).filter(Boolean)
@@ -48,7 +48,7 @@ export function LogoPicker({
               }
               title={path.replace(/\\/g, '/').split('/').pop() || path}
             >
-              <img src={outputUrl(path)} alt="" />
+              <img src={outputThumbUrl(path, 160)} alt="" loading="lazy" decoding="async" />
             </button>
           )
         })}

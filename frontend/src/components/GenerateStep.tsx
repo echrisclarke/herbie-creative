@@ -1,5 +1,5 @@
 import type { CreativeResult } from '../lib/api'
-import { outputUrl } from '../lib/api'
+import { outputThumbUrl } from '../lib/api'
 import type { CreativePlan } from '../lib/creativeCounts'
 import { PipelineCountBanner } from './PipelineCountBanner'
 
@@ -64,7 +64,13 @@ export function GenerateStep({
           <span className="generate-source-label">Source look</span>
           <div className="generate-source-thumbs">
             {sourcePreviewPaths.slice(0, 4).map((path) => (
-              <img key={path} src={outputUrl(path)} alt="" />
+              <img
+                key={path}
+                src={outputThumbUrl(path, 160)}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
             ))}
           </div>
         </div>
@@ -111,8 +117,10 @@ export function GenerateStep({
               >
                 {tile?.path ? (
                   <img
-                    src={outputUrl(tile.path)}
+                    src={outputThumbUrl(tile.path, 480)}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (

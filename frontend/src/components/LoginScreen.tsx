@@ -1,18 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { login, publicUrl, signup } from '../lib/api'
+import { formatApiError } from '../lib/errors'
 
 type Mode = 'signin' | 'signup'
-
-function errorMessage(err: unknown): string {
-  const raw = err instanceof Error ? err.message : String(err)
-  try {
-    const parsed = JSON.parse(raw) as { detail?: string }
-    if (parsed.detail) return parsed.detail
-  } catch {
-    /* keep raw */
-  }
-  return raw
-}
 
 export function LoginScreen({
   onSignedIn,
@@ -47,20 +37,23 @@ export function LoginScreen({
       }
       onSignedIn()
     } catch (err) {
-      setError(errorMessage(err))
+      setError(formatApiError(err, mode === 'signup' ? 'Could not create account.' : 'Could not sign in.'))
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <section className="install-setup" aria-label={mode === 'signup' ? 'Sign up' : 'Sign in'}>
+    <section
+      className="install-setup gate-enter"
+      aria-label={mode === 'signup' ? 'Sign up' : 'Sign in'}
+    >
       <div
         className="install-setup-media"
         style={{ backgroundImage: `url(${publicUrl('/brand/hero.png')})` }}
       />
       <div className="install-setup-scrim" />
-      <div className="install-setup-panel">
+      <div className="install-setup-panel gate-panel">
         <h1 className="name-header page-title header-text-style install-setup-brand">
           HERBIE CREATIVE
         </h1>
@@ -135,7 +128,7 @@ export function LoginScreen({
             </label>
           )}
           {error && (
-            <p className="install-setup-hint" role="alert">
+            <p className="form-error" role="alert">
               {error}
             </p>
           )}

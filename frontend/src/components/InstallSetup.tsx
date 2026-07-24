@@ -34,13 +34,13 @@ export function InstallSetup({
   }, [])
 
   return (
-    <section className="install-setup" aria-label="Setup">
+    <section className="install-setup gate-enter" aria-label="Setup">
       <div
         className="install-setup-media"
         style={{ backgroundImage: `url(${publicUrl('/brand/hero.png')})` }}
       />
       <div className="install-setup-scrim" />
-      <div className="install-setup-panel">
+      <div className="install-setup-panel gate-panel">
         <h1 className="name-header page-title header-text-style install-setup-brand">
           HERBIE CREATIVE
         </h1>

@@ -17,8 +17,6 @@ import {
 import { InstallSetup } from './components/InstallSetup'
 import { AboutPage } from './components/AboutPage'
 import { LoginScreen } from './components/LoginScreen'
-import { PublicExamplesGallery } from './components/PublicExamplesGallery'
-import { WelcomeGate } from './components/WelcomeGate'
 import {
   approveCampaign,
   cleanupEphemeral,
@@ -47,7 +45,8 @@ import {
 import { countNoTextCreatives, planCreativeCounts } from './lib/creativeCounts'
 import type { MotionGenerateRequest, MotionJob } from './lib/motionJobs'
 
-type AppTab = 'pipeline' | 'library' | 'settings'
+type AppTab = 'pipeline' | 'library' | 'settings' | 'about'
+type AuthOverlay = 'signup' | 'signin' | null
 type ToastAction = 'finalize' | 'results' | 'generate' | null
 
 function formatElapsed(sec: number) {
@@ -79,11 +78,9 @@ function mergeMotionPaths(
 }
 
 export default function App() {
-  // First visit: landing once per browser, then InstallSetup until OpenAI key or skip.
+  // First visit: landing once per browser, then app browse / InstallSetup as needed.
   const [showLanding, setShowLanding] = useState(() => !hasSeenLanding())
-  const [preAuthView, setPreAuthView] = useState<
-    'welcome' | 'signup' | 'signin' | 'about' | 'examples' | null
-  >(null)
+  const [authOverlay, setAuthOverlay] = useState<AuthOverlay>(null)
   const [showInstall, setShowInstall] = useState(false)
   const [installSkipped, setInstallSkipped] = useState(false)
   const [healthReady, setHealthReady] = useState(false)
@@ -93,6 +90,7 @@ export default function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [trial, setTrial] = useState<TrialStatus | null>(null)
   const [tab, setTab] = useState<AppTab>('pipeline')
+  const browseGuest = hosted && !authUser
   const [step, setStep] = useState(0)
   /** Highest step unlocked this run. Going back must not lock Finalize/Motion/Results. */
   const [furthestStep, setFurthestStep] = useState(0)
@@ -186,13 +184,19 @@ export default function App() {
   function enterFromLanding() {
     markLandingSeen()
     setShowLanding(false)
+    setAuthOverlay(null)
     if (hosted && !authUser) {
-      setPreAuthView('welcome')
+      // Browse the real app first; Library shows curated examples until signup.
+      setTab('library')
       return
     }
     if (healthReady && !openaiConfigured && !installSkipped) {
       setShowInstall(true)
     }
+  }
+
+  function requireAccount(mode: AuthOverlay = 'signup') {
+    setAuthOverlay(mode)
   }
 
   useEffect(() => {
@@ -812,50 +816,23 @@ export default function App() {
     return <LandingHero onEnter={enterFromLanding} />
   }
 
-  // After Get started: welcome menu, about, examples, then signup/signin.
-  if (hosted && !authUser) {
-    const view = preAuthView || 'welcome'
-    if (view === 'about') {
-      return (
-        <AboutPage
-          onBack={() => setPreAuthView('welcome')}
-          onGetStarted={() => setPreAuthView('signup')}
-        />
-      )
-    }
-    if (view === 'examples') {
-      return (
-        <PublicExamplesGallery
-          onBack={() => setPreAuthView('welcome')}
-          onGetStarted={() => setPreAuthView('signup')}
-        />
-      )
-    }
-    if (view === 'signin' || view === 'signup') {
-      return (
-        <LoginScreen
-          initialMode={view}
-          trialMessage="Create a free account to use Campaign Pipeline. You get 3 trial generate runs on the demo key; your library and creatives stay in your account."
-          onBack={() => setPreAuthView('welcome')}
-          onSignedIn={() => {
-            setPreAuthView(null)
-            refreshAuth()
-            refreshHealth()
-          }}
-        />
-      )
-    }
+  if (authOverlay) {
     return (
-      <WelcomeGate
-        onSignUp={() => setPreAuthView('signup')}
-        onSignIn={() => setPreAuthView('signin')}
-        onAbout={() => setPreAuthView('about')}
-        onExamples={() => setPreAuthView('examples')}
+      <LoginScreen
+        initialMode={authOverlay}
+        trialMessage="Create a free account to run campaigns. You get 3 trial generate runs on the demo key; your library stays private. Browse Library examples anytime before you sign up."
+        onBack={() => setAuthOverlay(null)}
+        onSignedIn={() => {
+          setAuthOverlay(null)
+          setTab('library')
+          refreshAuth()
+          refreshHealth()
+        }}
       />
     )
   }
 
-  if (showInstall) {
+  if (showInstall && !browseGuest) {
     return (
       <InstallSetup
         openaiConfigured={openaiConfigured}
@@ -883,53 +860,90 @@ export default function App() {
             </button>
             <p className="app-subtitle">Campaign Pipeline</p>
           </div>
-          <nav className="app-tabs" aria-label="Main">
-            <button
-              type="button"
-              className={tab === 'pipeline' ? 'app-tab active' : 'app-tab'}
-              onClick={() => setTab('pipeline')}
-            >
-              Pipeline
-            </button>
-            <button
-              type="button"
-              className={tab === 'library' ? 'app-tab active' : 'app-tab'}
-              onClick={() => setTab('library')}
-            >
-              Library
-            </button>
-            <button
-              type="button"
-              className={tab === 'settings' ? 'app-tab active' : 'app-tab'}
-              onClick={() => setTab('settings')}
-            >
-              Settings
-            </button>
-            {authUser && (
+          <div className="app-chrome-end">
+            {browseGuest && (
               <button
                 type="button"
-                className="app-tab"
-                onClick={() => {
-                  void logout().finally(() => {
-                    setAuthUser(null)
-                    refreshAuth()
-                  })
-                }}
+                className="trial-chip trial-chip-btn"
+                onClick={() => requireAccount('signup')}
               >
-                Sign out
+                Free trial · Sign up
               </button>
             )}
-          </nav>
-        </div>
-        {accountTrialActive && (
-          <div className="banner" style={{ margin: '0.75rem 1.25rem 0' }}>
-            Free trial: {trial?.remaining ?? 0} of {trial?.limit ?? 3} generate runs left
-            {typeof trial?.stills_remaining === 'number'
-              ? ` · up to ${trial.stills_remaining} stills remaining`
-              : ''}
-            . After that, add your own OpenAI key in Settings.
+            {accountTrialActive && (
+              <p className="trial-chip" aria-live="polite" title="Add your own OpenAI key in Settings when the trial ends">
+                Trial · {trial?.remaining ?? 0}/{trial?.limit ?? 3}
+                {typeof trial?.stills_remaining === 'number'
+                  ? ` · ${trial.stills_remaining} stills`
+                  : ''}
+              </p>
+            )}
+            <nav className="app-tabs" aria-label="Main">
+              <button
+                type="button"
+                className={tab === 'pipeline' ? 'app-tab active' : 'app-tab'}
+                onClick={() => setTab('pipeline')}
+              >
+                Pipeline
+              </button>
+              <button
+                type="button"
+                className={tab === 'library' ? 'app-tab active' : 'app-tab'}
+                onClick={() => setTab('library')}
+              >
+                Library
+              </button>
+              <button
+                type="button"
+                className={tab === 'settings' ? 'app-tab active' : 'app-tab'}
+                onClick={() => setTab('settings')}
+              >
+                Settings
+              </button>
+              <button
+                type="button"
+                className={tab === 'about' ? 'app-tab active' : 'app-tab'}
+                onClick={() => setTab('about')}
+              >
+                About
+              </button>
+              {browseGuest ? (
+                <>
+                  <button
+                    type="button"
+                    className="app-tab"
+                    onClick={() => requireAccount('signin')}
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    type="button"
+                    className="app-tab"
+                    onClick={() => requireAccount('signup')}
+                  >
+                    Sign up
+                  </button>
+                </>
+              ) : (
+                authUser && (
+                  <button
+                    type="button"
+                    className="app-tab"
+                    onClick={() => {
+                      void logout().finally(() => {
+                        setAuthUser(null)
+                        setTab('library')
+                        refreshAuth()
+                      })
+                    }}
+                  >
+                    Sign out
+                  </button>
+                )
+              )}
+            </nav>
           </div>
-        )}
+        </div>
         {tab === 'pipeline' && (
           <div className="app-chrome-steps">
             <WizardStepper
@@ -969,7 +983,27 @@ export default function App() {
       )}
 
       <main className="app-workspace">
-      {!openaiConfigured && tab === 'pipeline' && (
+      {browseGuest && (tab === 'pipeline' || tab === 'settings') && (
+        <div className="signup-nudge" role="status">
+          <div className="signup-nudge-copy">
+            <strong>Free trial ready when you are.</strong>
+            <span>
+              Browse the app and Library examples freely. Sign up to run 3 generate passes on the
+              demo key, save work to your account, then add your own API keys in Settings.
+            </span>
+          </div>
+          <div className="signup-nudge-actions">
+            <button type="button" className="btn" onClick={() => requireAccount('signup')}>
+              Sign up
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => requireAccount('signin')}>
+              Sign in
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!browseGuest && !openaiConfigured && tab === 'pipeline' && (
         <div className="banner">
           OpenAI key not set. Add your key to generate creatives. Library still works without it.
           <button
@@ -983,20 +1017,47 @@ export default function App() {
         </div>
       )}
 
-      {tab === 'settings' && (
-        <SettingsPanel
-          authUser={authUser}
-          hosted={hosted}
-          onKeysChanged={() => {
-            refreshHealth()
-          }}
+      {tab === 'about' && (
+        <AboutPage
+          onBrowseLibrary={() => setTab('library')}
+          onSignUp={browseGuest ? () => requireAccount('signup') : undefined}
         />
+      )}
+
+      {tab === 'settings' && (
+        browseGuest ? (
+          <div className="panel settings-panel">
+            <h2 style={{ marginTop: 0 }}>API keys</h2>
+            <p style={{ color: 'var(--muted)' }}>
+              Sign up to save encrypted OpenAI, Grok, and Google Fonts keys to your account. Guests
+              can explore the app and Library examples without keys.
+            </p>
+            <div className="action-row">
+              <button type="button" className="btn" onClick={() => requireAccount('signup')}>
+                Sign up for free trial
+              </button>
+              <button type="button" className="btn-ghost" onClick={() => requireAccount('signin')}>
+                Sign in
+              </button>
+            </div>
+          </div>
+        ) : (
+          <SettingsPanel
+            authUser={authUser}
+            hosted={hosted}
+            onKeysChanged={() => {
+              refreshHealth()
+            }}
+          />
+        )
       )}
 
       {tab === 'library' && (
         <SamplesGallery
-          onOpenCampaign={handleOpenPastCampaign}
-          desktopTools={desktopTools}
+          onOpenCampaign={browseGuest ? undefined : handleOpenPastCampaign}
+          desktopTools={desktopTools && !browseGuest}
+          guestMode={browseGuest}
+          onSignUp={browseGuest ? () => requireAccount('signup') : undefined}
         />
       )}
 
@@ -1004,9 +1065,21 @@ export default function App() {
         <>
           {step === 0 && (
             <IntakeStep
-              onNext={handleIntake}
-              onLoadSample={handleLoadSample}
-              desktopTools={desktopTools}
+              onNext={
+                browseGuest
+                  ? async (_briefText: string, _files: File[], _roles: string[]) => {
+                      requireAccount('signup')
+                    }
+                  : handleIntake
+              }
+              onLoadSample={
+                browseGuest
+                  ? async (_sampleId: string) => {
+                      requireAccount('signup')
+                    }
+                  : handleLoadSample
+              }
+              desktopTools={desktopTools && !browseGuest}
             />
           )}
           {step === 1 && brief && campaignId && (

@@ -767,24 +767,53 @@ export async function searchFonts(query: string) {
   return res.json() as Promise<{ fonts: string[] }>
 }
 
-export function outputUrl(path: string) {
+/** App-absolute media path (/outputs/…, /examples/…) without hosting prefix. */
+export function mediaAppPath(path: string): string {
   let p = path.replace(/\\/g, '/')
+  const base = publicBase()
+  if (base && (p === base || p.startsWith(`${base}/`))) {
+    p = p.slice(base.length) || '/'
+  }
+  if (p.startsWith('/api/')) p = p.slice('/api'.length) || '/'
+
   const marker = '/campaigns/'
   const idx = p.toLowerCase().lastIndexOf(marker)
   if (idx >= 0) p = p.slice(idx + marker.length)
   else if (p.toLowerCase().startsWith('campaigns/')) p = p.slice('campaigns/'.length)
 
-  // Repo seed assets are mounted at /sample-assets (not under /outputs/campaigns).
   const sampleIdx = p.toLowerCase().lastIndexOf('sample-assets/')
-  if (sampleIdx >= 0) {
-    return publicUrl(`/${p.slice(sampleIdx)}`)
-  }
-  if (p.toLowerCase().startsWith('sample-assets/')) {
-    return publicUrl(`/${p}`)
-  }
+  if (sampleIdx >= 0) return `/${p.slice(sampleIdx)}`
+  if (p.toLowerCase().startsWith('sample-assets/')) return `/${p}`
 
-  if (p.startsWith('/')) return publicUrl(p)
-  return publicUrl(`/outputs/${p}`)
+  if (
+    p.startsWith('/outputs/') ||
+    p.startsWith('/examples/') ||
+    p.startsWith('/sample-assets/') ||
+    p.startsWith('/brand/')
+  ) {
+    return p
+  }
+  if (p.startsWith('/')) return p
+  return `/outputs/${p}`
+}
+
+export function outputUrl(path: string) {
+  return publicUrl(mediaAppPath(path))
+}
+
+/**
+ * Small cached preview for grids/filmstrips. Full file stays for lightbox/detail.
+ * Videos pass through unchanged (use metadata preload on the element).
+ */
+export function thumbUrl(path: string, maxEdge = 480): string {
+  const src = mediaAppPath(path)
+  if (/\.(mp4|webm)$/i.test(src)) return publicUrl(src)
+  const q = new URLSearchParams({ src, w: String(maxEdge) })
+  return `${API}/thumb?${q.toString()}`
+}
+
+export function outputThumbUrl(path: string, maxEdge = 480): string {
+  return thumbUrl(path, maxEdge)
 }
 
 export function subscribeEvents(

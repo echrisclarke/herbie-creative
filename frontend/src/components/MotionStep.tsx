@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Brief, CreativeResult, Report } from '../lib/api'
-import { outputUrl, saveCampaign } from '../lib/api'
+import { outputThumbUrl, saveCampaign } from '../lib/api'
 import { cssAspectRatio } from '../lib/aspectExamples'
 import { planCreativeCounts } from '../lib/creativeCounts'
 import type { MotionGenerateRequest } from '../lib/motionJobs'
@@ -80,7 +80,7 @@ function StillPickGrid({
               className="motion-still-thumb"
               style={{ aspectRatio: cssAspectRatio(baseRatio(c.ratio)) }}
             >
-              <img src={outputUrl(path)} alt="" />
+              <img src={outputThumbUrl(path, 360)} alt="" loading="lazy" decoding="async" />
               {on && <span className="motion-still-check" aria-hidden>✓</span>}
             </div>
             <div className="motion-still-meta">
@@ -466,8 +466,10 @@ export function MotionStep({
             {likenessPath && (
               <div style={{ marginTop: '0.55rem' }}>
                 <img
-                  src={outputUrl(likenessPath)}
+                  src={outputThumbUrl(likenessPath, 192)}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     width: 96,
                     height: 96,
@@ -495,7 +497,12 @@ export function MotionStep({
                     onClick={() => toggleStyleRef(path)}
                     disabled={motionBusy}
                   >
-                    <img src={outputUrl(path)} alt="" />
+                    <img
+                      src={outputThumbUrl(path, 240)}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </button>
                 )
               })}

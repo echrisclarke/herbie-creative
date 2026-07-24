@@ -1,26 +1,26 @@
 export function AboutPage({
-  onBack,
-  onGetStarted,
+  onBrowseLibrary,
+  onSignUp,
 }: {
-  onBack?: () => void
-  onGetStarted?: () => void
+  onBrowseLibrary?: () => void
+  onSignUp?: () => void
 }) {
   return (
-    <section className="about-page" aria-label="About Campaign Pipeline">
-      <header className="public-examples-header">
+    <section className="about-page-panel" aria-label="About Campaign Pipeline">
+      <header className="about-panel-header">
         <div>
           <p className="app-subtitle">Campaign Pipeline</p>
           <h1 className="public-examples-title">About</h1>
         </div>
         <div className="public-examples-actions">
-          {onBack && (
-            <button type="button" className="btn-ghost" onClick={onBack}>
-              Back
+          {onBrowseLibrary && (
+            <button type="button" className="btn-ghost" onClick={onBrowseLibrary}>
+              Open Library
             </button>
           )}
-          {onGetStarted && (
-            <button type="button" className="btn" onClick={onGetStarted}>
-              Sign up to run
+          {onSignUp && (
+            <button type="button" className="btn" onClick={onSignUp}>
+              Sign up for free trial
             </button>
           )}
         </div>
@@ -33,10 +33,10 @@ export function AboutPage({
           with message and logo, and optionally add short motion clips.
         </p>
         <p>
-          The flow is Intake → Review → Generate → Finalize → Results. Sample campaigns show the
-          kind of output you can expect. When you create an account, your runs and library stay
-          private to you. New accounts get a short free trial on the demo key, then you add your own
-          OpenAI key to keep generating.
+          The flow is Intake → Review → Generate → Finalize → Results. Open Library to browse demo
+          examples before you create an account. When you sign up, your runs and library stay private
+          to you. New accounts get a short free trial on the demo key, then you add your own OpenAI
+          key in Settings to keep generating.
         </p>
         <p>
           Built for scalable social campaign production: consistent ratios, localization-ready

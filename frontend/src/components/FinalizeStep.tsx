@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   adaptLocalizeCopy,
   applyFinalize,
+  outputThumbUrl,
   outputUrl,
   saveCampaign,
   suggestFinalize,
@@ -1286,7 +1287,12 @@ export function FinalizeStep({
                 className={`finalize-film-thumb${i === activeHeroIndex ? ' is-on' : ''}`}
                 onClick={() => setHeroIndex(i)}
               >
-                <img src={outputUrl(t.path)} alt="" />
+                <img
+                  src={outputThumbUrl(t.path, 240)}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
                 <span>{ratioPlacementLabel(t.ratio)}</span>
               </button>
             ))}

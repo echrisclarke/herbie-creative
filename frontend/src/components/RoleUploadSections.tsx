@@ -1,4 +1,4 @@
-import { outputUrl } from '../lib/api'
+import { outputThumbUrl } from '../lib/api'
 
 export type UploadRole =
   | 'logo'
@@ -109,7 +109,12 @@ export function RoleUploadSections({
                     const name = path.replace(/\\/g, '/').split('/').pop() || path
                     return (
                       <div key={path} className="kept-uploads-thumb" title={name}>
-                        <img src={outputUrl(path)} alt={name} />
+                        <img
+                          src={outputThumbUrl(path, 240)}
+                          alt={name}
+                          loading="lazy"
+                          decoding="async"
+                        />
                         <span>{name}</span>
                       </div>
                     )

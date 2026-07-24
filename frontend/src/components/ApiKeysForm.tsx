@@ -5,6 +5,7 @@ import {
   saveSettingsKeys,
   type SettingsKeys,
 } from '../lib/api'
+import { formatApiError } from '../lib/errors'
 
 export function ApiKeysForm({
   onKeysChanged,
@@ -35,11 +36,11 @@ export function ApiKeysForm({
         setGoogleFonts(snap.google_fonts?.value || '')
       }
     } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err)
       setError(
-        /failed to fetch|networkerror|load failed/i.test(raw)
-          ? 'Cannot reach the local server. Keep the terminal running (py -3 run_app.py), then refresh this page.'
-          : raw,
+        formatApiError(
+          err,
+          'Cannot load API key settings. If you are running locally, keep the server terminal open and refresh.',
+        ),
       )
     }
   }
@@ -66,12 +67,7 @@ export function ApiKeysForm({
       setMessage('Keys saved to local settings.')
       onKeysChanged?.()
     } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err)
-      setError(
-        /failed to fetch|networkerror|load failed/i.test(raw)
-          ? 'Cannot reach the local server. Keep the terminal running (py -3 run_app.py), then refresh and try Save again.'
-          : raw,
-      )
+      setError(formatApiError(err, 'Could not save keys. Try again.'))
     } finally {
       setBusy(false)
     }
@@ -96,7 +92,7 @@ export function ApiKeysForm({
       )
       onKeysChanged?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(formatApiError(err, 'Could not clear that key.'))
     } finally {
       setBusy(false)
     }
