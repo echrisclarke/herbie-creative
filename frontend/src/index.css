@@ -460,7 +460,7 @@ button.trial-chip-btn:hover {
 
 .about-page-panel {
   width: 100%;
-  max-width: 42rem;
+  max-width: 48rem;
 }
 
 .about-panel-header {
@@ -470,6 +470,15 @@ button.trial-chip-btn:hover {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1.25rem;
+}
+
+.about-page-panel .about-proof {
+  margin-top: 1.75rem;
+}
+
+.about-page-panel .social-grid-proof {
+  max-width: none;
+  width: 100%;
 }
 
 .trial-note {
