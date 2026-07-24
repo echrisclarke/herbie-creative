@@ -219,7 +219,7 @@ def _startup_hosted() -> None:
 
 @app.get("/health")
 def health(request: Request) -> dict:
-    from app.mail import resend_configured
+    from app.mail import mail_configured
 
     openai_ok = bool(get_openai_api_key())
     xai_ok = bool(get_xai_api_key())
@@ -257,7 +257,7 @@ def health(request: Request) -> dict:
         "google_fonts_catalog": google_ok,
         "trial": trial_info,
         "auth_required": auth_required,
-        "password_reset_email": resend_configured(),
+        "password_reset_email": mail_configured(),
     }
 
 
@@ -335,7 +335,7 @@ async def auth_me(request: Request) -> dict:
 async def auth_forgot_password(body: dict) -> dict:
     """Start email reset. Always returns ok so addresses cannot be probed."""
     from app.auth_store import create_password_reset_token, init_db
-    from app.mail import public_app_url, resend_configured, send_password_reset_email
+    from app.mail import mail_configured, public_app_url, send_password_reset_email
 
     if not hosted_mode():
         raise HTTPException(status_code=400, detail="Only available online")
@@ -346,16 +346,17 @@ async def auth_forgot_password(body: dict) -> dict:
     if token:
         reset_url = f"{public_app_url()}/?reset_token={token}"
         email_sent = send_password_reset_email(to_email=email, reset_url=reset_url)
+    configured = mail_configured()
     return {
         "ok": True,
-        "email_configured": resend_configured(),
+        "email_configured": configured,
         # Only report send status generically; never confirm whether the email exists.
         "message": (
             "If that account exists, we sent a reset link."
-            if resend_configured()
+            if configured
             else "Email reset is not configured yet. An admin can set a new password in Settings."
         ),
-        "email_sent": email_sent if resend_configured() else False,
+        "email_sent": email_sent if configured else False,
     }
 
 
