@@ -34,6 +34,20 @@ export function ApiKeysForm({
         setOpenai(snap.openai.value || '')
         setXai(snap.xai.value || '')
         setGoogleFonts(snap.google_fonts?.value || '')
+        const anyShown = Boolean(
+          snap.openai.value || snap.xai.value || snap.google_fonts?.value,
+        )
+        if (!anyShown) {
+          setMessage(
+            snap.hosted
+              ? 'No keys saved on this account yet. Host/trial keys stay hidden; paste your own to see them here.'
+              : 'No stored keys to show.',
+          )
+        }
+      } else {
+        setOpenai('')
+        setXai('')
+        setGoogleFonts('')
       }
     } catch (err) {
       setError(
@@ -100,6 +114,7 @@ export function ApiKeysForm({
 
   async function toggleReveal() {
     const next = !reveal
+    setMessage(null)
     setReveal(next)
     await load(next)
   }
@@ -118,12 +133,9 @@ export function ApiKeysForm({
           hint={data?.openai.hint}
           value={openai}
           onChange={setOpenai}
+          reveal={reveal}
           placeholder={
-            reveal && data?.openai.value
-              ? data.openai.value
-              : data?.openai.hint
-                ? `Current: ${data.openai.hint}`
-                : 'sk-...'
+            data?.openai.hint ? `Current: ${data.openai.hint}` : 'sk-...'
           }
           onClear={() => void handleClear('openai')}
           busy={busy}
@@ -136,12 +148,9 @@ export function ApiKeysForm({
           hint={data?.xai.hint}
           value={xai}
           onChange={setXai}
+          reveal={reveal}
           placeholder={
-            reveal && data?.xai.value
-              ? data.xai.value
-              : data?.xai.hint
-                ? `Current: ${data.xai.hint}`
-                : 'xai-...'
+            data?.xai.hint ? `Current: ${data.xai.hint}` : 'xai-...'
           }
           onClear={() => void handleClear('xai')}
           busy={busy}
@@ -154,12 +163,11 @@ export function ApiKeysForm({
           hint={data?.google_fonts?.hint}
           value={googleFonts}
           onChange={setGoogleFonts}
+          reveal={reveal}
           placeholder={
-            reveal && data?.google_fonts?.value
-              ? data.google_fonts.value
-              : data?.google_fonts?.hint
-                ? `Current: ${data.google_fonts.hint}`
-                : 'AIza...'
+            data?.google_fonts?.hint
+              ? `Current: ${data.google_fonts.hint}`
+              : 'AIza...'
           }
           onClear={() => void handleClear('google_fonts')}
           busy={busy}
@@ -191,6 +199,7 @@ function KeyCard({
   hint,
   value,
   onChange,
+  reveal,
   placeholder,
   onClear,
   busy,
@@ -202,6 +211,7 @@ function KeyCard({
   hint?: string | null
   value: string
   onChange: (v: string) => void
+  reveal: boolean
   placeholder: string
   onClear: () => void
   busy: boolean
@@ -222,7 +232,7 @@ function KeyCard({
       )}
       <input
         className="field"
-        type="password"
+        type={reveal && value ? 'text' : 'password'}
         autoComplete="off"
         spellCheck={false}
         value={value}
