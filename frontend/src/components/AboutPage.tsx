@@ -71,7 +71,7 @@ export function AboutPage({
           )}
           {onSignUp && (
             <button type="button" className="btn" onClick={onSignUp}>
-              Sign up for free trial
+              Sign up
             </button>
           )}
         </div>
@@ -79,19 +79,13 @@ export function AboutPage({
 
       <div className="about-page-body">
         <p>
-          Campaign Pipeline turns a campaign brief and product assets into multi-ratio social
-          creatives. You set brand, products, framing, and copy, then generate stills, stamp finals
-          with message and logo, and optionally add short motion clips.
+          Campaign Pipeline turns a brief and product assets into multi-ratio social creatives.
+          Set brand, products, framing, and copy, then generate stills, stamp finals, and optionally
+          add short motion clips.
         </p>
         <p>
-          The flow is Intake → Review → Generate → Finalize → Results. Open Library to browse demo
-          examples before you create an account. When you sign up, your runs and library stay private
-          to you. New accounts get a short free trial on the demo key, then you add your own OpenAI
-          key in Settings to keep generating.
-        </p>
-        <p>
-          Built for scalable social campaign production: consistent ratios, localization-ready
-          finals, and a library you can reopen later.
+          Flow: Intake → Review → Generate → Finalize → Results. Sign up for 3 trial generates, then
+          add your own OpenAI key in Settings to keep going.
         </p>
       </div>
 

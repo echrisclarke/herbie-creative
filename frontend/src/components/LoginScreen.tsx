@@ -61,8 +61,8 @@ export function LoginScreen({
         <p className="install-setup-lead">
           {trialMessage ||
             (mode === 'signup'
-              ? 'Create an account, then add your own OpenAI key in Settings to generate creatives.'
-              : 'Sign in to your account.')}
+              ? 'Create an account to run campaigns.'
+              : 'Sign in to continue.')}
         </p>
 
         <div className="auth-mode-toggle" role="tablist" aria-label="Account">

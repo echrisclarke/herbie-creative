@@ -820,7 +820,7 @@ export default function App() {
     return (
       <LoginScreen
         initialMode={authOverlay}
-        trialMessage="Create a free account to run campaigns. You get 3 trial generate runs on the demo key; your library stays private. Browse Library examples anytime before you sign up."
+        trialMessage="Create an account to run campaigns. New accounts get 3 trial generates."
         onBack={() => setAuthOverlay(null)}
         onSignedIn={() => {
           setAuthOverlay(null)
@@ -986,11 +986,8 @@ export default function App() {
       {browseGuest && (tab === 'pipeline' || tab === 'settings') && (
         <div className="signup-nudge" role="status">
           <div className="signup-nudge-copy">
-            <strong>Free trial ready when you are.</strong>
-            <span>
-              Browse the app and Library examples freely. Sign up to run 3 generate passes on the
-              demo key, save work to your account, then add your own API keys in Settings.
-            </span>
+            <strong>Sign up to run a free trial.</strong>
+            <span>3 generate runs on the demo key, then add your own API key in Settings.</span>
           </div>
           <div className="signup-nudge-actions">
             <button type="button" className="btn" onClick={() => requireAccount('signup')}>
@@ -1029,12 +1026,11 @@ export default function App() {
           <div className="panel settings-panel">
             <h2 style={{ marginTop: 0 }}>API keys</h2>
             <p style={{ color: 'var(--muted)' }}>
-              Sign up to save encrypted OpenAI, Grok, and Google Fonts keys to your account. Guests
-              can explore the app and Library examples without keys.
+              Sign up to save your OpenAI, Grok, and Google Fonts keys.
             </p>
             <div className="action-row">
               <button type="button" className="btn" onClick={() => requireAccount('signup')}>
-                Sign up for free trial
+                Sign up
               </button>
               <button type="button" className="btn-ghost" onClick={() => requireAccount('signin')}>
                 Sign in

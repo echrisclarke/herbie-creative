@@ -379,13 +379,12 @@ export function SamplesGallery({
           <div>
             <h2 style={{ margin: '0 0 0.35rem' }}>Examples</h2>
             <p style={{ margin: 0, color: 'var(--muted)' }}>
-              Demo campaign outputs you can browse before signing up. After you create an account,
-              Library shows only your private runs.
+              Sample outputs from demo campaigns.
             </p>
           </div>
           {onSignUp && (
             <button type="button" className="btn" onClick={onSignUp}>
-              Sign up for free trial
+              Sign up
             </button>
           )}
         </div>
