@@ -26,22 +26,19 @@ The FastAPI app runs on Railway. DNS for the subdomain is a Squarespace CNAME to
 | `TRIAL_FORCE_QUALITY` | `low` |
 | `TRIAL_GLOBAL_DAILY_RUNS` | `100` |
 | `PUBLIC_APP_URL` | `https://pipeline.herbiecreative.com` |
-| `SMTP_HOST` | `smtp-relay.brevo.com` (shared HerbieCreative Brevo tenant) |
-| `SMTP_PORT` | `587` |
-| `SMTP_USER` | Brevo SMTP login |
-| `SMTP_PASS` | Brevo SMTP key |
-| `SMTP_FROM` | `Campaign Pipeline <noreply@herbiecreative.com>` |
+| `BREVO_API_KEY` | Brevo **API** key (HTTPS). Required on Railway Hobby (SMTP ports are blocked) |
+| `SMTP_FROM` / `BREVO_FROM` | `Campaign Pipeline <noreply@herbiecreative.com>` |
 
 Landing is public. Guests can browse the app and Library examples. Signup is required to generate. New accounts get 3 host-key generate runs (low quality, still caps), then add their own OpenAI key.
 
 ### Password reset
 
-Uses the same **Brevo SMTP** relay as Cycle / Sherbert / Baba B-Ball (`smtp-relay.brevo.com`). Set the `SMTP_*` vars above.
+Uses the shared **HerbieCreative Brevo** account (same as Cycle / Sherbert), via the **HTTPS API** (not SMTP). Railway Hobby blocks outbound SMTP.
 
-1. Users use **Forgot password?** on the sign-in screen.
-2. Until SMTP is configured, an admin can reset any password under **Settings → Reset user password**.
-
-SSH into Railway is optional ops tooling. It is not required for password reset once Brevo SMTP (or admin reset) is in place.
+1. In Brevo → **SMTP & API → API keys**, create an API key.
+2. Set Railway `BREVO_API_KEY` (and `SMTP_FROM` / `BREVO_FROM` if needed).
+3. Users use **Forgot password?** on the sign-in screen.
+4. Fallback: admin can reset any password under **Settings → Reset user password**.
 
 3. **Volume** at `/data`.
 4. Confirm the default Railway URL works at the **root**:  
