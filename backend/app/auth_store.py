@@ -190,6 +190,27 @@ def authenticate(email: str, password: str) -> UserRecord | None:
     )
 
 
+def set_password(email: str, password: str) -> UserRecord:
+    """Overwrite password hash for an existing account."""
+    email_norm = email.strip().lower()
+    if len(password) < 8:
+        raise ValueError("Password must be at least 8 characters")
+    row = get_user_by_email(email_norm)
+    if not row:
+        raise ValueError("User not found")
+    with _connect() as conn:
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (_hash_password(password), row["id"]),
+        )
+    return UserRecord(
+        id=row["id"],
+        email=row["email"],
+        is_admin=bool(row["is_admin"]),
+        created_at=row["created_at"],
+    )
+
+
 def load_user_keys(user_id: str) -> dict[str, str]:
     with _connect() as conn:
         row = conn.execute(
@@ -377,7 +398,11 @@ def increment_trial_usage(user_id: str, *, stills: int = 0) -> int:
 
 
 def bootstrap_admin_from_env() -> dict[str, Any] | None:
-    """Create the first admin from BOOTSTRAP_ADMIN_EMAIL / PASSWORD when DB is empty."""
+    """Create the first admin from BOOTSTRAP_ADMIN_EMAIL / PASSWORD when DB is empty.
+
+    Set FORCE_BOOTSTRAP_PASSWORD=1 to overwrite that admin's password on startup
+    (then turn the flag off so later deploys do not keep resetting it).
+    """
     if not hosted_mode():
         return None
     import os
@@ -386,7 +411,16 @@ def bootstrap_admin_from_env() -> dict[str, Any] | None:
     password = (os.getenv("BOOTSTRAP_ADMIN_PASSWORD") or "").strip()
     if not email or not password:
         return None
+    force = (os.getenv("FORCE_BOOTSTRAP_PASSWORD") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     if count_users() > 0:
-        return None
+        if not force:
+            return None
+        user = set_password(email, password)
+        return {"updated": True, "email": user.email, "id": user.id}
     user = create_user(email, password, is_admin=True)
     return {"created": True, "email": user.email, "id": user.id}

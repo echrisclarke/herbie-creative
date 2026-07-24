@@ -204,9 +204,11 @@ def _startup_hosted() -> None:
     from app.auth_store import bootstrap_admin_from_env, init_db
 
     init_db()
-    created = bootstrap_admin_from_env()
-    if created:
-        logger.info("Bootstrap admin created: %s", created.get("email"))
+    boot = bootstrap_admin_from_env()
+    if boot and boot.get("created"):
+        logger.info("Bootstrap admin created: %s", boot.get("email"))
+    elif boot and boot.get("updated"):
+        logger.info("Bootstrap admin password updated: %s", boot.get("email"))
     else:
         logger.info(
             "Hosted mode ready (set BOOTSTRAP_ADMIN_EMAIL/PASSWORD to create the first admin)"
